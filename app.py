@@ -5,6 +5,7 @@ app = Flask(__name__)
 
 # Load CSV once when app starts
 df = pd.read_csv("price.csv")
+print(df.columns.tolist())
 
 # Clean data
 df["CODE"] = df["CODE"].astype(str).str.strip()
