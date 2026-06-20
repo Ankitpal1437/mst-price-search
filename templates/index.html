@@ -10,6 +10,31 @@
         <input type="text" name="search" placeholder="Enter Product Code">
         <button type="submit">Search</button>
     </form>
+    <hr>
+
+{% if results %}
+
+<h2>Search Results</h2>
+
+{% for row in results %}
+
+<div style="border:1px solid #ccc; padding:10px; margin:10px;">
+
+    <b>Code:</b> {{ row[0] }} <br><br>
+
+    <b>Description:</b> {{ row[1] }} <br><br>
+
+    <b>SDP:</b> ₹{{ row[2] }} <br>
+
+    <b>NRP:</b> ₹{{ row[3] }} <br>
+
+    <b>MRP:</b> ₹{{ row[4] }}
+
+</div>
+
+{% endfor %}
+
+{% endif %}
 
 </body>
 </html>
