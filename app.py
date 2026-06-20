@@ -3,8 +3,12 @@ import pandas as pd
 
 app = Flask(__name__)
 
-# CSV load
+# Load CSV once when app starts
 df = pd.read_csv("price.csv")
+
+# Clean data
+df["CODE"] = df["CODE"].astype(str).str.strip()
+df["DESCRIPTION"] = df["DESCRIPTION"].astype(str).str.strip()
 
 @app.route("/", methods=["GET", "POST"])
 def home():
@@ -13,24 +17,41 @@ def home():
 
     if request.method == "POST":
 
-        search = request.form["search"].strip().lower()
+        search = request.form.get("search", "").strip()
 
-        for _, row in df.iterrows():
+        if search:
 
-            try:
-                code = str(row.iloc[0]).lower()
-                desc = str(row.iloc[1]).lower()
+            search_lower = search.lower()
 
-                if search in code or search in desc:
-                    results.append(row)
+            # Exact code match
+            exact = df[
+                df["CODE"].str.lower() == search_lower
+            ]
 
-                if len(results) >= 10:
-                    break
+            # Starts with
+            starts = df[
+                df["CODE"].str.lower().str.startswith(search_lower)
+            ]
 
-            except:
-                pass
+            # Contains code or description
+            contains = df[
+                df["CODE"].str.lower().str.contains(search_lower, na=False)
+                |
+                df["DESCRIPTION"].str.lower().str.contains(search_lower, na=False)
+            ]
 
-    return render_template("index.html", results=results)
+            final = pd.concat([
+                exact,
+                starts,
+                contains
+            ]).drop_duplicates()
+
+            results = final.head(20).to_dict("records")
+
+    return render_template(
+        "index.html",
+        results=results
+    )
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0", port=5000)
