@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+{% block title %}Quotation Builder · MST Ceramic World{% endblock %}
+
+{% block content %}
+
+<span class="eyebrow">Bathroom-wise Selection</span>
+<h1 class="page-title">Build a Quotation</h1>
+<p class="page-sub">Add bathrooms, pick products by area, choose a pricing mode, and export a client-ready PDF.</p>
+
+<div class="card" style="margin-top:20px">
+  <div class="card-head"><h3>Customer</h3></div>
+  <div class="field-row">
+    <div><label>Name *</label><input type="text" id="cust-name" placeholder="Customer name"></div>
+    <div><label>Phone</label><input type="tel" id="cust-phone" placeholder="Mobile number"></div>
+  </div>
+  <div class="field-row">
+    <div><label>Site / Project</label><input type="text" id="cust-site" placeholder="e.g. Lodha Heights, Flat 1203"></div>
+    <div><label>Architect</label><input type="text" id="cust-architect" placeholder="Optional"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Pricing Mode</h3></div>
+  <div class="tab-row" id="mode-tabs">
+    <div class="tab-chip active" data-mode="nrp" onclick="setMode('nrp', this)">NRP</div>
+    <div class="tab-chip" data-mode="nrp_disc" onclick="setMode('nrp_disc', this)">NRP − Discount</div>
+    <div class="tab-chip" data-mode="sdp_gst" onclick="setMode('sdp_gst', this)">SDP + 18% GST</div>
+    <div class="tab-chip" data-mode="mrp_disc" onclick="setMode('mrp_disc', this)">MRP − 35% + GST</div>
+  </div>
+  <div id="disc-field" style="display:none">
+    <label>Discount % (3–15)</label>
+    <input type="number" id="disc-pct" value="10" min="3" max="15" style="max-width:120px" oninput="recalc()">
+  </div>
+  <div style="font-size:12px;color:var(--muted);margin-top:8px;background:var(--paper-dim);padding:9px 12px;border-radius:8px" id="mode-info">
+    Customer pays the NRP rate as listed.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h3>Bathrooms</h3>
+    <button class="btn btn-outline btn-sm" onclick="addBathroom()">+ Add Bathroom</button>
+  </div>
+  <div id="bathrooms-container"></div>
+  <div id="no-bathroom-hint" class="empty-state" style="padding:30px 10px">
+    <div class="icon">🛁</div>
+    <p>Add a bathroom to start placing products into Shower / WC / Basin areas.</p>
+  </div>
+</div>
+
+<div class="grand-total-bar" id="total-bar" style="display:none">
+  <span class="label">Grand Total</span>
+  <span class="amount" id="grand-total">₹0</span>
+</div>
+
+<div style="display:flex;gap:10px;margin-top:6px">
+  <button class="btn btn-dark full" onclick="saveAndDownload()">Save Quotation + Download PDF</button>
+</div>
+
+<!-- ADD PRODUCT MODAL -->
+<div class="modal-bg" id="add-product-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Add Product</h3>
+      <button class="modal-close" onclick="closeAddModal()">✕</button>
+    </div>
+
+    <label>Search Product</label>
+    <input type="text" id="modal-search" placeholder="Code or description..." oninput="modalSearch()" autocomplete="off">
+    <div id="modal-search-results" style="margin-top:8px;max-height:220px;overflow-y:auto"></div>
+
+    <div id="modal-selected" style="display:none;margin-top:14px">
+      <div style="background:var(--paper-dim);border-radius:10px;padding:12px">
+        <div id="modal-selected-info" style="font-size:13px;font-weight:700;margin-bottom:6px"></div>
+        <div class="field-row">
+          <div><label>Qty</label><input type="number" id="modal-qty" value="1" min="1" oninput="updateModalPrice()"></div>
+          <div><label>Bathroom (optional label)</label><input type="text" id="modal-bathroom-tag" placeholder="e.g. Master"></div>
+        </div>
+        <div id="modal-price-preview" style="margin-top:8px;font-size:13px;font-weight:700;color:var(--brass-deep)"></div>
+      </div>
+      <button class="btn btn-dark full" style="margin-top:12px" onclick="confirmAddProduct()">Add to this area</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let curMode = 'nrp';
+let bathrooms = []; // {id, name, areas:{shower:[],wc:[],basin:[]}}
+let modalTargetBathroom = null;
+let modalTargetArea = null;
+let modalSelectedProduct = null;
+let bid = 0;
+
+const AREA_DEFS = [
+  { key: 'shower', label: 'Shower Area', icon: '🚿' },
+  { key: 'wc', label: 'WC Area', icon: '🚽' },
+  { key: 'basin', label: 'Basin Area', icon: '🪥' }
+];
+
+// ---- load cart items added from search page, if any ----
+window.addEventListener('DOMContentLoaded', () => {
+  const cart = JSON.parse(sessionStorage.getItem('quote_cart') || '[]');
+  if (cart.length) {
+    addBathroom('Master Bathroom');
+    cart.forEach(item => {
+      bathrooms[0].areas.shower.push({
+        code: item.code, description: item.description, source: item.source,
+        sdp: item.sdp, nrp: item.nrp, mrp: item.mrp, qty: item.qty || 1, bathroomTag: ''
+      });
+    });
+    sessionStorage.removeItem('quote_cart');
+    renderBathrooms();
+    toast('Loaded ' + cart.length + ' product(s) from search');
+  }
+});
+
+function setMode(mode, el) {
+  curMode = mode;
+  document.querySelectorAll('#mode-tabs .tab-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('disc-field').style.display = mode === 'nrp_disc' ? 'block' : 'none';
+  const info = {
+    nrp: 'Customer pays the NRP rate as listed.',
+    nrp_disc: 'NRP minus your discount, applied per line item.',
+    sdp_gst: 'SDP plus 18% GST, applied per line item.',
+    mrp_disc: 'MRP minus 35%, plus 18% GST on the discounted amount.'
+  };
+  document.getElementById('mode-info').textContent = info[mode];
+  recalc();
+}
+
+function unitPrice(p) {
+  const disc = parseFloat(document.getElementById('disc-pct').value) || 10;
+  const nrp = parseFloat(p.nrp) || 0, sdp = parseFloat(p.sdp) || 0, mrp = parseFloat(p.mrp) || 0;
+  if (curMode === 'nrp') return nrp;
+  if (curMode === 'nrp_disc') return nrp * (1 - Math.min(Math.max(disc, 3), 15) / 100);
+  if (curMode === 'sdp_gst') return sdp * 1.18;
+  if (curMode === 'mrp_disc') return mrp * 0.65 * 1.18;
+  return 0;
+}
+
+function addBathroom(presetName) {
+  bid++;
+  bathrooms.push({
+    id: bid,
+    name: presetName || '',
+    areas: { shower: [], wc: [], basin: [] }
+  });
+  renderBathrooms();
+}
+
+function removeBathroom(id) {
+  bathrooms = bathrooms.filter(b => b.id !== id);
+  renderBathrooms();
+}
+
+function renderBathrooms() {
+  const container = document.getElementById('bathrooms-container');
+  document.getElementById('no-bathroom-hint').style.display = bathrooms.length ? 'none' : 'block';
+
+  container.innerHTML = bathrooms.map(b => `
+    <div class="bathroom-block">
+      <div class="bathroom-head">
+        <input type="text" placeholder="Bathroom name (e.g. Master Bathroom)" value="${esc(b.name)}" oninput="renameBathroom(${b.id}, this.value)">
+        <button class="btn btn-icon btn-sm" style="background:rgba(255,255,255,0.12);color:white" onclick="removeBathroom(${b.id})">✕</button>
+      </div>
+      <div class="bathroom-body">
+        ${AREA_DEFS.map(a => areaBlock(b, a)).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  recalc();
+}
+
+function areaBlock(bathroom, area) {
+  const items = bathroom.areas[area.key];
+  return `
+    <div class="area-block">
+      <div class="area-label">${area.icon} ${area.label} <span style="color:var(--muted);font-weight:500">(${items.length})</span></div>
+      <div class="area-products">
+        ${items.map((it, idx) => lineItem(bathroom.id, area.key, it, idx)).join('')}
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="openAddModal(${bathroom.id}, '${area.key}')">+ Add product to ${area.label}</button>
+    </div>
+  `;
+}
+
+function lineItem(bathId, areaKey, item, idx) {
+  const total = unitPrice(item) * (item.qty || 1);
+  return `
+    <div class="line-item">
+      <div class="li-info">
+        <div class="li-code">${esc(item.code)}${item.bathroomTag ? ' · ' + esc(item.bathroomTag) : ''}</div>
+        <div class="li-desc">${esc(item.description)} · Qty ${item.qty}</div>
+      </div>
+      <div class="li-price">₹${total.toFixed(2)}</div>
+      <button class="li-remove" onclick="removeLineItem(${bathId}, '${areaKey}', ${idx})">✕</button>
+    </div>
+  `;
+}
+
+function renameBathroom(id, name) {
+  const b = bathrooms.find(x => x.id === id);
+  if (b) b.name = name;
+}
+
+function removeLineItem(bathId, areaKey, idx) {
+  const b = bathrooms.find(x => x.id === bathId);
+  if (b) { b.areas[areaKey].splice(idx, 1); renderBathrooms(); }
+}
+
+function recalc() {
+  renderTotalsOnly();
+}
+
+function renderTotalsOnly() {
+  // re-render line item prices + grand total without losing input focus issues
+  document.querySelectorAll('.bathroom-block').forEach((el, i) => {
+    const b = bathrooms[i];
+    if (!b) return;
+  });
+  renderBathrooms.skipGuard = true;
+
+  let grand = 0;
+  bathrooms.forEach(b => AREA_DEFS.forEach(a => {
+    b.areas[a.key].forEach(it => { grand += unitPrice(it) * (it.qty || 1); });
+  }));
+
+  const bar = document.getElementById('total-bar');
+  const hasItems = bathrooms.some(b => AREA_DEFS.some(a => b.areas[a.key].length));
+  bar.style.display = hasItems ? 'flex' : 'none';
+  document.getElementById('grand-total').textContent = fmtMoney(grand);
+
+  // update line item displayed prices in place (cheap full re-render is fine at this scale)
+  document.querySelectorAll('.bathroom-block').forEach((blockEl, i) => {
+    const b = bathrooms[i];
+    if (!b) return;
+    blockEl.querySelectorAll('.area-block').forEach((areaEl, ai) => {
+      const areaKey = AREA_DEFS[ai].key;
+      const items = b.areas[areaKey];
+      const lineEls = areaEl.querySelectorAll('.line-item .li-price');
+      lineEls.forEach((priceEl, idx) => {
+        const it = items[idx];
+        if (it) priceEl.textContent = fmtMoney(unitPrice(it) * (it.qty || 1));
+      });
+    });
+  });
+}
+
+// ---- ADD PRODUCT MODAL ----
+function openAddModal(bathId, areaKey) {
+  modalTargetBathroom = bathId;
+  modalTargetArea = areaKey;
+  modalSelectedProduct = null;
+  document.getElementById('modal-search').value = '';
+  document.getElementById('modal-search-results').innerHTML = '';
+  document.getElementById('modal-selected').style.display = 'none';
+  document.getElementById('add-product-modal').classList.add('open');
+  setTimeout(() => document.getElementById('modal-search').focus(), 100);
+}
+
+function closeAddModal() {
+  document.getElementById('add-product-modal').classList.remove('open');
+}
+
+let modalSearchTimer;
+function modalSearch() {
+  clearTimeout(modalSearchTimer);
+  const q = document.getElementById('modal-search').value.trim();
+  if (q.length < 2) { document.getElementById('modal-search-results').innerHTML = ''; return; }
+  modalSearchTimer = setTimeout(async () => {
+    const data = await apiGet('/api/search?q=' + encodeURIComponent(q));
+    const box = document.getElementById('modal-search-results');
+    if (!data.results.length) { box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted)">No matches</div>'; return; }
+    box.innerHTML = data.results.slice(0, 8).map(p => `
+      <div class="line-item" style="cursor:pointer" onclick='selectModalProduct(${JSON.stringify(p).replace(/'/g, "&apos;")})'>
+        <div class="li-info">
+          <div class="li-code">${esc(p.code)}</div>
+          <div class="li-desc">${esc(p.description)}</div>
+        </div>
+        <div class="li-price">${fmtMoneyShort(p.nrp)}</div>
+      </div>
+    `).join('');
+  }, 200);
+}
+
+function selectModalProduct(p) {
+  modalSelectedProduct = p;
+  document.getElementById('modal-selected').style.display = 'block';
+  document.getElementById('modal-selected-info').textContent = p.code + ' — ' + p.description;
+  document.getElementById('modal-qty').value = 1;
+  updateModalPrice();
+}
+
+function updateModalPrice() {
+  if (!modalSelectedProduct) return;
+  const qty = parseInt(document.getElementById('modal-qty').value) || 1;
+  const total = unitPrice(modalSelectedProduct) * qty;
+  document.getElementById('modal-price-preview').textContent = 'Line total: ' + fmtMoney(total);
+}
+
+function confirmAddProduct() {
+  if (!modalSelectedProduct) { toast('Pick a product first'); return; }
+  const b = bathrooms.find(x => x.id === modalTargetBathroom);
+  if (!b) return;
+  const qty = parseInt(document.getElementById('modal-qty').value) || 1;
+  const tag = document.getElementById('modal-bathroom-tag').value.trim();
+  b.areas[modalTargetArea].push({
+    code: modalSelectedProduct.code, description: modalSelectedProduct.description,
+    source: modalSelectedProduct.source, sdp: modalSelectedProduct.sdp,
+    nrp: modalSelectedProduct.nrp, mrp: modalSelectedProduct.mrp,
+    qty, bathroomTag: tag
+  });
+  closeAddModal();
+  renderBathrooms();
+  toast('✅ Added');
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ---- SAVE + PDF ----
+async function saveAndDownload() {
+  const name = document.getElementById('cust-name').value.trim();
+  if (!name) { toast('❌ Customer name is required'); return; }
+  if (!bathrooms.some(b => AREA_DEFS.some(a => b.areas[a.key].length))) { toast('❌ Add at least one product'); return; }
+
+  let grand = 0;
+  const bathroomsPayload = bathrooms.map(b => {
+    const areas = {};
+    AREA_DEFS.forEach(a => {
+      areas[a.key] = b.areas[a.key].map(it => {
+        const total = unitPrice(it) * (it.qty || 1);
+        grand += total;
+        return { ...it, unit_price: unitPrice(it), total };
+      });
+    });
+    return { name: b.name || 'Bathroom', areas };
+  });
+
+  const payload = {
+    customer_name: name,
+    customer_phone: document.getElementById('cust-phone').value.trim(),
+    price_mode: curMode,
+    discount_pct: parseFloat(document.getElementById('disc-pct').value) || 0,
+    bathrooms: bathroomsPayload,
+    grand_total: grand
+  };
+
+  const res = await apiPost('/api/quotations', payload);
+  if (res.ok) {
+    toast('✅ Quotation saved — generating PDF...');
+    generatePDF(payload);
+  }
+}
+
+function generatePDF(q) {
+  // Build a printable HTML doc and trigger browser print-to-PDF for a dependable, image-capable PDF.
+  const win = window.open('', '_blank');
+  const areaLabels = { shower: 'SHOWER AREA', wc: 'WC AREA', basin: 'BASIN AREA' };
+  let bodyHtml = '';
+  let sno = 1;
+
+  q.bathrooms.forEach(b => {
+    const hasItems = Object.values(b.areas).some(arr => arr.length);
+    if (!hasItems) return;
+    bodyHtml += `<div class="bath-title">${esc(b.name || 'Bathroom')}</div>`;
+    Object.keys(areaLabels).forEach(ak => {
+      const items = b.areas[ak];
+      if (!items.length) return;
+      bodyHtml += `<div class="area-title">${areaLabels[ak]}</div>`;
+      bodyHtml += `<table><thead><tr><th>S.No</th><th>Code</th><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>`;
+      items.forEach(it => {
+        bodyHtml += `<tr>
+          <td>${sno++}</td>
+          <td>${esc(it.code)}</td>
+          <td>${esc(it.description)}${it.bathroomTag ? ' <i>(' + esc(it.bathroomTag) + ')</i>' : ''}</td>
+          <td>${it.qty}</td>
+          <td>₹${it.unit_price.toFixed(2)}</td>
+          <td>₹${it.total.toFixed(2)}</td>
+        </tr>`;
+      });
+      bodyHtml += `</tbody></table>`;
+    });
+  });
+
+  win.document.write(`
+    <html><head><title>Quotation - ${esc(q.customer_name)}</title>
+    <style>
+      body{font-family:Arial,sans-serif;color:#15171c;padding:30px;max-width:800px;margin:0 auto}
+      .head{background:#15171c;color:white;padding:18px 22px;border-radius:8px;margin-bottom:18px}
+      .head h1{font-size:18px;margin:0 0 4px}
+      .head p{font-size:11px;opacity:0.7;margin:0}
+      .meta{display:flex;justify-content:space-between;margin-bottom:16px;font-size:13px}
+      .bath-title{background:#b8762f;color:white;padding:7px 12px;border-radius:6px;font-weight:bold;font-size:13px;margin:16px 0 8px}
+      .area-title{font-weight:bold;font-size:11.5px;color:#8f5a20;text-transform:uppercase;margin:10px 0 4px}
+      table{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:11.5px}
+      th,td{border:1px solid #e4ddd0;padding:6px 8px;text-align:left}
+      th{background:#f1ede4}
+      .total-row{background:#15171c;color:#b8762f;padding:12px 16px;border-radius:8px;display:flex;justify-content:space-between;font-weight:bold;font-size:15px;margin-top:14px}
+      .terms{font-size:10.5px;color:#555;margin-top:20px;line-height:1.6}
+      @media print{.no-print{display:none}}
+    </style></head>
+    <body>
+      <div class="head">
+        <h1>MST CERAMIC WORLD</h1>
+        <p>HO: Lalji Arcade, Opp Saibaba Temple, Santoshi Mata Road, Kalyan-W &nbsp;|&nbsp; Tel: 0251-2208090 &nbsp;|&nbsp; GST: 27AABFM8508N1ZV</p>
+      </div>
+      <div class="meta">
+        <div><b>TO:</b> ${esc(q.customer_name).toUpperCase()}<br>${q.customer_phone ? 'MOB: ' + esc(q.customer_phone) : ''}</div>
+        <div style="text-align:right"><b>DATE:</b> ${new Date().toLocaleDateString('en-IN')}<br>Mode: ${q.price_mode}</div>
+      </div>
+      ${bodyHtml}
+      <div class="total-row"><span>GRAND TOTAL</span><span>₹${q.grand_total.toFixed(2)}</span></div>
+      <div class="terms">
+        <b>TERMS &amp; CONDITIONS:</b><br>
+        • Transportation charges extra &nbsp; • Order once placed cannot be modified &nbsp;
+        • Material must be checked at site, responsibility thereafter is customer's &nbsp;
+        • Delivery at ground level, unloading in customer's scope &nbsp; • Quotation valid for 15 days
+      </div>
+      <button class="no-print" onclick="window.print()" style="margin-top:20px;padding:10px 20px;background:#15171c;color:white;border:none;border-radius:8px;cursor:pointer">Print / Save as PDF</button>
+    </body></html>
+  `);
+  win.document.close();
+}
+</script>
+{% endblock %}

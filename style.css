@@ -1,0 +1,351 @@
+/* =================================================================
+   MST CERAMIC WORLD — Design System
+   Display: Fraunces (warm serif, catalogue feel)
+   Body/UI: Inter (clean grotesque for data, numbers, controls)
+   ================================================================= */
+
+:root{
+  --ink: #15171c;
+  --ink-soft: #2a2d35;
+  --paper: #faf8f4;
+  --paper-dim: #f1ede4;
+  --line: #e4ddd0;
+  --line-strong: #d4cabb;
+  --brass: #b8762f;
+  --brass-deep: #8f5a20;
+  --brass-tint: #f6e9d8;
+  --signal: #c0392b;
+  --signal-tint: #fbe9e7;
+  --good: #2f7d4f;
+  --good-tint: #e6f4ea;
+  --info: #2d5f8a;
+  --info-tint: #e6eef6;
+  --muted: #6b6f7a;
+  --white: #ffffff;
+
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Inter', sans-serif;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow-card: 0 1px 2px rgba(21,23,28,0.04), 0 8px 24px -12px rgba(21,23,28,0.12);
+  --shadow-pop: 0 20px 60px -20px rgba(21,23,28,0.35);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font-body);
+  background:var(--paper);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.45;
+}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit}
+
+/* ---------------- TOPBAR ---------------- */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:var(--ink);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+.topbar-inner{
+  max-width:1180px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 20px;gap:16px;
+}
+.brand{display:flex;align-items:center;gap:10px;color:var(--paper)}
+.brand-mark{
+  width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(155deg,var(--brass),var(--brass-deep));
+  color:white;font-family:var(--font-display);font-weight:700;font-size:18px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.brand-text{display:flex;flex-direction:column;line-height:1.2}
+.brand-text strong{font-family:var(--font-display);font-size:14px;letter-spacing:0.3px}
+.brand-text small{font-size:10.5px;color:rgba(255,255,255,0.5);font-weight:400;letter-spacing:0.2px}
+
+.nav-pills{display:flex;gap:4px;background:rgba(255,255,255,0.06);padding:4px;border-radius:999px}
+.nav-pills a{
+  padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:600;
+  color:rgba(255,255,255,0.6);transition:all .15s ease;white-space:nowrap;
+}
+.nav-pills a:hover{color:rgba(255,255,255,0.9)}
+.nav-pills a.active{background:var(--brass);color:white}
+
+/* ---------------- SHELL ---------------- */
+.page-shell{max-width:1180px;margin:0 auto;padding:28px 20px 80px}
+
+/* ---------------- TYPE ---------------- */
+.eyebrow{
+  font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;
+  color:var(--brass-deep);margin-bottom:6px;display:block;
+}
+h1.page-title{
+  font-family:var(--font-display);font-size:clamp(28px,4vw,40px);
+  font-weight:600;letter-spacing:-0.5px;color:var(--ink);
+}
+.page-sub{color:var(--muted);font-size:14px;margin-top:6px;max-width:520px}
+
+/* ---------------- SEARCH HERO ---------------- */
+.search-hero{
+  background:var(--ink);
+  border-radius:20px;
+  padding:34px 28px;
+  margin-bottom:24px;
+  position:relative;
+  overflow:hidden;
+}
+.search-hero::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(600px 200px at 85% -10%, rgba(184,118,47,0.35), transparent 60%),
+    radial-gradient(400px 200px at 10% 110%, rgba(184,118,47,0.18), transparent 60%);
+  pointer-events:none;
+}
+.search-hero-inner{position:relative;z-index:1}
+.search-hero .eyebrow{color:var(--brass)}
+.search-hero h1{color:var(--paper);font-family:var(--font-display);font-size:clamp(24px,3.4vw,32px);font-weight:600;margin-bottom:4px}
+.search-hero p{color:rgba(255,255,255,0.55);font-size:13.5px;margin-bottom:20px}
+
+.search-box{
+  position:relative;display:flex;align-items:center;
+  background:rgba(255,255,255,0.07);
+  border:1.5px solid rgba(255,255,255,0.14);
+  border-radius:14px;padding:4px;
+  transition:border-color .15s ease;
+}
+.search-box:focus-within{border-color:var(--brass)}
+.search-box svg{flex-shrink:0;margin-left:14px;color:rgba(255,255,255,0.4)}
+.search-box input{
+  flex:1;background:none;border:none;outline:none;
+  color:white;font-size:16px;padding:13px 12px;
+  font-weight:500;
+}
+.search-box input::placeholder{color:rgba(255,255,255,0.35);font-weight:400}
+.search-clear{
+  background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.6);
+  width:26px;height:26px;border-radius:50%;display:none;
+  align-items:center;justify-content:center;margin-right:8px;flex-shrink:0;
+  font-size:14px;
+}
+.search-clear.show{display:flex}
+
+.hero-stats{display:flex;gap:18px;margin-top:16px;flex-wrap:wrap}
+.hero-stat{display:flex;align-items:baseline;gap:5px}
+.hero-stat b{font-family:var(--font-display);color:var(--brass);font-size:17px;font-weight:600}
+.hero-stat span{color:rgba(255,255,255,0.45);font-size:11.5px;text-transform:uppercase;letter-spacing:0.5px}
+
+/* ---------------- RESULTS META ---------------- */
+.results-meta{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;flex-wrap:wrap;gap:8px;
+}
+.results-count{font-size:13px;color:var(--muted);font-weight:500}
+.results-count b{color:var(--ink)}
+.results-count .priority-note{font-size:11px;color:var(--brass-deep);font-style:italic;display:block;margin-top:2px}
+
+/* ---------------- PRODUCT GRID / CARD ---------------- */
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+
+.product-card{
+  background:var(--white);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:0;
+  overflow:hidden;
+  box-shadow:var(--shadow-card);
+  display:flex;flex-direction:column;
+  transition:transform .12s ease, box-shadow .12s ease;
+  position:relative;
+}
+.product-card:hover{transform:translateY(-2px);box-shadow:0 4px 8px rgba(21,23,28,0.06), 0 16px 32px -16px rgba(21,23,28,0.18)}
+.product-card .edge{position:absolute;left:0;top:0;bottom:0;width:4px}
+.product-card.is-fittings .edge{background:var(--info)}
+.product-card.is-lighting .edge{background:var(--brass)}
+
+.pc-body{padding:14px 16px 12px 18px}
+.pc-top{display:flex;align-items:start;justify-content:space-between;gap:8px;margin-bottom:6px}
+.pc-code{
+  font-family:var(--font-body);font-weight:700;font-size:13px;
+  color:var(--ink);letter-spacing:0.2px;
+}
+.pc-source-tag{
+  font-size:9.5px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;
+  padding:3px 7px;border-radius:5px;flex-shrink:0;
+}
+.is-fittings .pc-source-tag{background:var(--info-tint);color:var(--info)}
+.is-lighting .pc-source-tag{background:var(--brass-tint);color:var(--brass-deep)}
+
+.pc-desc{font-size:12.5px;color:var(--muted);line-height:1.4;margin-bottom:10px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* The signature "spec strip" — price tag styled row of chips */
+.spec-strip{
+  display:flex;flex-wrap:wrap;gap:6px;
+  padding:10px 16px 12px 18px;
+  background:var(--paper-dim);
+  border-top:1px dashed var(--line-strong);
+}
+.spec-chip{
+  display:flex;flex-direction:column;
+  background:var(--white);border:1px solid var(--line);
+  border-radius:7px;padding:4px 9px;min-width:58px;
+}
+.spec-chip .k{font-size:8.5px;font-weight:700;letter-spacing:0.5px;color:var(--muted);text-transform:uppercase}
+.spec-chip .v{font-size:13px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.spec-chip.highlight{background:var(--ink);border-color:var(--ink)}
+.spec-chip.highlight .k{color:rgba(255,255,255,0.5)}
+.spec-chip.highlight .v{color:var(--brass)}
+
+.pc-actions{display:flex;gap:6px;padding:10px 16px 14px 18px}
+.pc-btn{
+  flex:1;border:1px solid var(--line-strong);background:var(--white);
+  border-radius:8px;padding:8px 10px;font-size:12px;font-weight:600;
+  color:var(--ink-soft);transition:all .12s ease;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+}
+.pc-btn:hover{border-color:var(--ink);background:var(--paper-dim)}
+.pc-btn.primary{background:var(--ink);color:white;border-color:var(--ink)}
+.pc-btn.primary:hover{background:var(--brass-deep);border-color:var(--brass-deep)}
+
+/* ---------------- EMPTY / LOADING ---------------- */
+.empty-state{
+  text-align:center;padding:60px 20px;color:var(--muted);
+}
+.empty-state .icon{font-size:36px;margin-bottom:10px;opacity:0.5}
+.empty-state h3{font-family:var(--font-display);font-size:18px;color:var(--ink-soft);margin-bottom:6px;font-weight:600}
+.empty-state p{font-size:13px}
+
+.skeleton-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.skeleton-card{height:168px;border-radius:var(--radius);background:linear-gradient(100deg,var(--line) 30%,var(--paper-dim) 50%,var(--line) 70%);background-size:200% 100%;animation:shimmer 1.3s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ---------------- GENERIC CARD / SECTION ---------------- */
+.card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow-card);margin-bottom:14px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px}
+.card-head h3{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--ink)}
+.card-head .badge{font-size:11px}
+
+/* ---------------- FORM ELEMENTS ---------------- */
+label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:10px 0 4px}
+label:first-child{margin-top:0}
+input[type=text],input[type=tel],input[type=number],input[type=date],select,textarea{
+  width:100%;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:9px;
+  font-size:13.5px;color:var(--ink);background:var(--white);transition:border-color .15s ease;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brass)}
+textarea{min-height:70px;resize:vertical}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+/* ---------------- BUTTONS ---------------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:11px 18px;border-radius:10px;border:none;
+  font-size:13.5px;font-weight:700;letter-spacing:0.1px;
+  transition:all .12s ease;
+}
+.btn.full{width:100%}
+.btn-dark{background:var(--ink);color:white}
+.btn-dark:hover{background:var(--ink-soft)}
+.btn-brass{background:var(--brass);color:white}
+.btn-brass:hover{background:var(--brass-deep)}
+.btn-outline{background:transparent;border:1.5px solid var(--line-strong);color:var(--ink-soft)}
+.btn-outline:hover{border-color:var(--ink);background:var(--paper-dim)}
+.btn-danger{background:var(--signal-tint);color:var(--signal)}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+.btn-icon{width:34px;height:34px;padding:0;border-radius:9px}
+
+/* ---------------- BADGES ---------------- */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:0.3px}
+.badge-info{background:var(--info-tint);color:var(--info)}
+.badge-good{background:var(--good-tint);color:var(--good)}
+.badge-signal{background:var(--signal-tint);color:var(--signal)}
+.badge-brass{background:var(--brass-tint);color:var(--brass-deep)}
+.badge-muted{background:var(--paper-dim);color:var(--muted)}
+
+/* ---------------- STAT GRID ---------------- */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px}
+.stat-box{background:var(--white);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;position:relative;overflow:hidden}
+.stat-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--brass)}
+.stat-box .num{font-family:var(--font-display);font-size:26px;font-weight:600;color:var(--ink)}
+.stat-box .lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;font-weight:600;margin-top:2px}
+
+/* ---------------- LIST ITEMS (visitors, customers, etc.) ---------------- */
+.list-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.list-item:last-child{border-bottom:none}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--brass-tint);color:var(--brass-deep);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;font-family:var(--font-display)}
+.li-body{flex:1;min-width:0}
+.li-name{font-weight:700;font-size:13.5px;color:var(--ink)}
+.li-sub{font-size:11.5px;color:var(--muted);margin-top:1px}
+.li-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* ---------------- TOAST ---------------- */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:white;padding:11px 22px;border-radius:999px;
+  font-size:12.5px;font-weight:600;box-shadow:var(--shadow-pop);
+  opacity:0;pointer-events:none;transition:all .25s cubic-bezier(.2,.9,.3,1.3);z-index:300;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------------- TABS ---------------- */
+.tab-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tab-chip{
+  padding:7px 14px;border-radius:999px;font-size:12px;font-weight:700;
+  border:1.5px solid var(--line-strong);background:var(--white);color:var(--muted);
+  transition:all .15s ease;
+}
+.tab-chip.active{background:var(--ink);color:white;border-color:var(--ink)}
+
+/* ---------------- MODAL ---------------- */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(21,23,28,0.55);z-index:200;overflow-y:auto;padding:20px;backdrop-filter:blur(2px)}
+.modal-bg.open{display:flex;align-items:flex-start;justify-content:center}
+.modal{background:var(--white);border-radius:18px;padding:22px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-pop);animation:modalIn .2s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes modalIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.modal-head h3{font-family:var(--font-display);font-size:17px;font-weight:600}
+.modal-close{width:30px;height:30px;border-radius:50%;background:var(--paper-dim);border:none;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px}
+
+/* ---------------- BATHROOM BUILDER ---------------- */
+.bathroom-block{border:1.5px solid var(--line-strong);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
+.bathroom-head{background:var(--ink);color:white;padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.bathroom-head input{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;font-family:var(--font-display);font-size:15px;font-weight:600;padding:5px 10px;border-radius:7px;max-width:220px}
+.bathroom-head input::placeholder{color:rgba(255,255,255,0.4)}
+.bathroom-body{padding:14px 16px;background:var(--paper-dim)}
+.area-block{margin-bottom:12px}
+.area-block:last-child{margin-bottom:0}
+.area-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--brass-deep);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.area-products{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+
+.line-item{
+  background:var(--white);border:1px solid var(--line);border-radius:9px;
+  padding:9px 12px;display:flex;align-items:center;gap:10px;
+}
+.line-item .li-info{flex:1;min-width:0}
+.line-item .li-code{font-size:11.5px;font-weight:700;color:var(--ink)}
+.line-item .li-desc{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.line-item .li-price{font-size:13px;font-weight:700;color:var(--brass-deep);font-variant-numeric:tabular-nums;white-space:nowrap}
+.line-item .li-remove{width:24px;height:24px;border-radius:50%;background:var(--signal-tint);color:var(--signal);border:none;font-size:13px;flex-shrink:0}
+
+.grand-total-bar{
+  background:var(--ink);border-radius:var(--radius);padding:18px 20px;
+  display:flex;align-items:center;justify-content:space-between;margin:18px 0;
+}
+.grand-total-bar .label{color:rgba(255,255,255,0.5);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+.grand-total-bar .amount{color:var(--brass);font-family:var(--font-display);font-size:26px;font-weight:600}
+
+/* ---------------- RESPONSIVE ---------------- */
+@media (max-width:640px){
+  .topbar-inner{padding:10px 14px}
+  .brand-text small{display:none}
+  .nav-pills a{padding:7px 10px;font-size:11.5px}
+  .page-shell{padding:18px 14px 70px}
+  .search-hero{padding:22px 18px;border-radius:16px}
+  .product-grid,.skeleton-grid{grid-template-columns:1fr}
+  .field-row,.field-row3{grid-template-columns:1fr}
+}
