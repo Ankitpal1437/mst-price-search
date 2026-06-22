@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}Product Search · MST Ceramic World{% endblock %}
+
+{% block content %}
+
+<div class="search-hero">
+  <div class="search-hero-inner">
+    <span class="eyebrow">Live Catalogue · 72,000+ SKUs</span>
+    <h1>Find any Jaquar product in seconds</h1>
+    <p>Search by product code or description — fittings &amp; lighting, one box.</p>
+
+    <div class="search-box">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="search-input" placeholder="Try a code like CHR-079N, or a name like &quot;basin mixer&quot;" autocomplete="off" autofocus>
+      <button class="search-clear" id="search-clear" onclick="clearSearch()">✕</button>
+    </div>
+
+    <div class="hero-stats" id="hero-stats">
+      <div class="hero-stat"><b id="stat-total">—</b><span>Total SKUs</span></div>
+      <div class="hero-stat"><b id="stat-fittings">—</b><span>Fittings</span></div>
+      <div class="hero-stat"><b id="stat-lighting">—</b><span>Lighting</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="results-area">
+  <div class="empty-state">
+    <div class="icon">🔍</div>
+    <h3>Start typing to search</h3>
+    <p>Exact code matches appear first, then closest matches, then description hits.</p>
+  </div>
+</div>
+
+<!-- Product detail / add-to-quote modal -->
+<div class="modal-bg" id="product-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Product Details</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let searchTimer = null;
+let lastQuery = '';
+
+const resultsArea = document.getElementById('results-area');
+const searchInput = document.getElementById('search-input');
+const clearBtn = document.getElementById('search-clear');
+
+// Load stats on page load
+apiGet('/api/stats').then(d => {
+  document.getElementById('stat-total').textContent = d.total.toLocaleString('en-IN');
+  document.getElementById('stat-fittings').textContent = d.fittings.toLocaleString('en-IN');
+  document.getElementById('stat-lighting').textContent = d.lighting.toLocaleString('en-IN');
+});
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim();
+  clearBtn.classList.toggle('show', q.length > 0);
+  clearTimeout(searchTimer);
+
+  if (q.length < 2) {
+    resultsArea.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🔍</div>
+        <h3>Start typing to search</h3>
+        <p>Exact code matches appear first, then closest matches, then description hits.</p>
+      </div>`;
+    return;
+  }
+
+  // Show skeleton while debouncing
+  resultsArea.innerHTML = `<div class="skeleton-grid">${'<div class="skeleton-card"></div>'.repeat(6)}</div>`;
+
+  searchTimer = setTimeout(() => runSearch(q), 220);
+});
+
+function clearSearch() {
+  searchInput.value = '';
+  clearBtn.classList.remove('show');
+  searchInput.focus();
+  resultsArea.innerHTML = `
+    <div class="empty-state">
+      <div class="icon">🔍</div>
+      <h3>Start typing to search</h3>
+      <p>Exact code matches appear first, then closest matches, then description hits.</p>
+    </div>`;
+}
+
+async function runSearch(q) {
+  lastQuery = q;
+  const data = await apiGet('/api/search?q=' + encodeURIComponent(q));
+  if (lastQuery !== q) return; // stale response, ignore
+
+  if (!data.results.length) {
+    resultsArea.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📭</div>
+        <h3>No products found</h3>
+        <p>Try a shorter code fragment, or search by description instead.</p>
+      </div>`;
+    return;
+  }
+
+  resultsArea.innerHTML = `
+    <div class="results-meta">
+      <div class="results-count"><b>${data.count}</b> product${data.count !== 1 ? 's' : ''} found
+        <span class="priority-note">Exact code matches shown first</span>
+      </div>
+    </div>
+    <div class="product-grid">${data.results.map(productCard).join('')}</div>
+  `;
+}
+
+function productCard(p) {
+  const isLighting = p.source === 'LIGHTING';
+  const cls = isLighting ? 'is-lighting' : 'is-fittings';
+  const tag = isLighting ? 'Lighting' : 'Fittings';
+
+  let chips = '';
+  if (isLighting) {
+    if (p.ewp) chips += spec('EWP', p.ewp);
+    if (p.mdp) chips += spec('MDP', p.mdp);
+    if (p.sdp) chips += spec('SDP', p.sdp);
+    if (p.npp) chips += spec('NPP', p.npp);
+    if (p.nrp) chips += spec('NRP', p.nrp);
+    if (p.mrp) chips += spec('MRP', p.mrp, true);
+  } else {
+    if (p.sdp) chips += spec('SDP', p.sdp);
+    if (p.nrp) chips += spec('NRP', p.nrp, true);
+    if (p.mrp) chips += spec('MRP', p.mrp);
+    if (p.old_nrp) chips += spec('Old NRP', p.old_nrp);
+    if (p.old_mrp) chips += spec('Old MRP', p.old_mrp);
+  }
+
+  return `
+    <div class="product-card ${cls}">
+      <div class="edge"></div>
+      <div class="pc-body">
+        <div class="pc-top">
+          <span class="pc-code">${esc(p.code)}</span>
+          <span class="pc-source-tag">${tag}</span>
+        </div>
+        <div class="pc-desc">${esc(p.description)}</div>
+      </div>
+      <div class="spec-strip">${chips || '<span style="font-size:11px;color:var(--muted)">No pricing on file</span>'}</div>
+      <div class="pc-actions">
+        <button class="pc-btn" onclick='openProduct(${JSON.stringify(p).replace(/'/g, "&apos;")})'>Details</button>
+        <button class="pc-btn primary" onclick='addToQuoteQuick(${JSON.stringify(p).replace(/'/g, "&apos;")})'>+ Add to Quote</button>
+      </div>
+    </div>
+  `;
+}
+
+function spec(label, value, highlight) {
+  if (!value || value === 'None' || value === 'nan') return '';
+  return `<div class="spec-chip ${highlight ? 'highlight' : ''}"><span class="k">${label}</span><span class="v">₹${value}</span></div>`;
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function openProduct(p) {
+  const isLighting = p.source === 'LIGHTING';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="badge ${isLighting ? 'badge-brass' : 'badge-info'}" style="margin-bottom:10px">${isLighting ? 'Lighting' : 'Fittings'}</div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">${esc(p.code)}</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px">${esc(p.description)}</div>
+    <div class="field-row" style="gap:8px">
+      ${priceRow('SDP', p.sdp)}${priceRow('NRP', p.nrp)}
+      ${priceRow('MRP', p.mrp)}${isLighting ? priceRow('EWP', p.ewp) : priceRow('Old NRP', p.old_nrp)}
+    </div>
+    <button class="btn btn-dark full" style="margin-top:16px" onclick='addToQuoteQuick(${JSON.stringify(p).replace(/'/g, "&apos;")}); closeModal();'>+ Add to Quotation</button>
+  `;
+  document.getElementById('product-modal').classList.add('open');
+}
+
+function priceRow(label, val) {
+  if (!val || val === 'None') return '';
+  return `<div style="background:var(--paper-dim);border-radius:9px;padding:8px 10px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700">${label}</div><div style="font-size:14px;font-weight:700">₹${val}</div></div>`;
+}
+
+function closeModal() {
+  document.getElementById('product-modal').classList.remove('open');
+}
+
+function addToQuoteQuick(p) {
+  let cart = JSON.parse(sessionStorage.getItem('quote_cart') || '[]');
+  cart.push({
+    code: p.code, description: p.description, source: p.source,
+    sdp: p.sdp, nrp: p.nrp, mrp: p.mrp, qty: 1, area: 'shower', bathroom: ''
+  });
+  sessionStorage.setItem('quote_cart', JSON.stringify(cart));
+  toast('✅ Added — go to Quotation to build the full estimate');
+}
+</script>
+{% endblock %}
