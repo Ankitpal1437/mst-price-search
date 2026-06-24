@@ -6,7 +6,7 @@
 <h1 class="page-title">Build a Quotation</h1>
 <p class="page-sub">Add bathrooms, pick products by area, choose pricing mode and export professional PDF.</p>
 
-<!-- CUSTOMER DETAILS -->
+<!-- CUSTOMER -->
 <div class="card" style="margin-top:20px">
   <div class="card-head"><h3>👤 Customer Details</h3></div>
   <div class="field-row">
@@ -15,7 +15,7 @@
   </div>
   <div class="field-row">
     <div><label>Site / Project</label><input type="text" id="cust-site" placeholder="e.g. Lodha Heights, Flat 1203"></div>
-    <div><label>Architect / Builder</label><input type="text" id="cust-architect" placeholder="Optional"></div>
+    <div><label>Architect / Builder</label><input type="text" id="cust-arch" placeholder="Optional"></div>
   </div>
 </div>
 
@@ -26,24 +26,16 @@
     <div class="tab-chip active" data-mode="nrp" onclick="setMode('nrp',this)">NRP</div>
     <div class="tab-chip" data-mode="nrp_disc" onclick="setMode('nrp_disc',this)">NRP − Discount</div>
     <div class="tab-chip" data-mode="sdp_gst" onclick="setMode('sdp_gst',this)">SDP + GST</div>
-    <div class="tab-chip" data-mode="mrp_disc" onclick="setMode('mrp_disc',this)">MRP − Disc + GST</div>
+    <div class="tab-chip" data-mode="mrp_disc" onclick="setMode('mrp_disc',this)">MRP − 35% + GST</div>
   </div>
   <div id="disc-field" style="display:none">
     <label>Discount % (3–15)</label>
     <input type="number" id="disc-pct" value="10" min="3" max="15" style="max-width:120px" oninput="recalc()">
   </div>
-
-  <!-- PDF OPTIONS -->
-  <div style="margin-top:14px;padding:12px;background:var(--paper-dim);border-radius:10px">
-    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">PDF Options</div>
-    <div style="display:flex;gap:16px;flex-wrap:wrap">
-      <label style="display:flex;align-items:center;gap:6px;margin:0;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer">
-        <input type="checkbox" id="opt-gst" checked style="width:16px;height:16px"> Show GST breakdown in total
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;margin:0;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer">
-        <input type="checkbox" id="opt-img" checked style="width:16px;height:16px"> Include product image column
-      </label>
-    </div>
+  <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap">
+    <label style="display:flex;align-items:center;gap:6px;margin:0;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer">
+      <input type="checkbox" id="opt-img" checked style="width:16px;height:16px"> Include product image column in PDF
+    </label>
   </div>
 </div>
 
@@ -60,17 +52,17 @@
   </div>
 </div>
 
-<!-- TOTALS -->
+<!-- TOTALS PREVIEW -->
 <div id="totals-section" style="display:none">
   <div style="background:white;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:14px">
-    <div style="padding:14px 18px;border-bottom:1px solid var(--line);font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Price Summary</div>
+    <div style="padding:12px 18px;border-bottom:1px solid var(--line);font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Price Summary</div>
     <div id="totals-breakdown" style="padding:14px 18px"></div>
   </div>
 </div>
 
 <div style="display:flex;gap:10px;margin-top:6px">
   <button class="btn btn-dark full" onclick="saveAndDownload()">💾 Save + Download PDF</button>
-  <button class="btn btn-outline btn-sm" onclick="clearQuote()" style="flex:0.35">🗑️</button>
+  <button class="btn btn-outline btn-sm" onclick="clearQuote()" style="flex:0.3">🗑️</button>
 </div>
 
 <!-- SAVED QUOTATIONS -->
@@ -86,28 +78,27 @@
       <h3>Add Product</h3>
       <button class="modal-close" onclick="closeAddModal()">✕</button>
     </div>
-
     <label>Search Product</label>
-    <input type="text" id="modal-search" placeholder="Code or description..." oninput="modalSearch()" autocomplete="off">
-    <div id="modal-search-results" style="margin-top:6px;max-height:200px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;display:none"></div>
-
-    <div id="modal-selected-block" style="display:none;margin-top:12px">
+    <input type="text" id="modal-search" placeholder="Code or name..." oninput="modalSearch()" autocomplete="off">
+    <div id="modal-results" style="margin-top:6px;max-height:200px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;display:none"></div>
+    <div id="modal-sel-block" style="display:none;margin-top:12px">
       <div style="background:var(--paper-dim);border-radius:10px;padding:12px;margin-bottom:10px">
-        <div id="modal-sel-code" style="font-weight:700;font-size:13px;color:var(--ink)"></div>
+        <div id="modal-sel-code" style="font-weight:700;font-size:13px"></div>
         <div id="modal-sel-desc" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
-        <div id="modal-sel-prices" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+        <div id="modal-sel-prices" style="font-size:11px;color:var(--brass-deep);margin-top:4px"></div>
       </div>
-
-      <label>Product Image URL (optional)</label>
-      <input type="text" id="modal-img-url" placeholder="https://www.jaquar.com/images/...">
-      <div style="font-size:11px;color:var(--muted);margin-top:3px;margin-bottom:8px">
-        💡 Jaquar website pe product kholo → right click image → Copy image address
-        <button class="btn btn-outline btn-sm" style="margin-left:6px;font-size:10px" onclick="openJaquarSearch()">🌐 Open Jaquar</button>
+      <label>Product Image URL <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <input type="text" id="modal-img" placeholder="https://www.jaquar.com/images/...">
+      <div style="display:flex;gap:6px;margin-top:4px;margin-bottom:8px">
+        <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="openJaquar()">🌐 Open Jaquar Website</button>
+        <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="previewImg()">👁️ Preview</button>
       </div>
-
+      <div id="img-preview-box" style="display:none;margin-bottom:8px;text-align:center">
+        <img id="img-preview-el" style="width:80px;height:80px;object-fit:contain;border:1px solid var(--line);border-radius:8px">
+      </div>
       <div class="field-row">
         <div><label>Qty</label><input type="number" id="modal-qty" value="1" min="1" oninput="updateModalPrice()"></div>
-        <div><label>Bathroom label (optional)</label><input type="text" id="modal-bath-tag" placeholder="e.g. Attach"></div>
+        <div><label>Label (optional)</label><input type="text" id="modal-tag" placeholder="e.g. Attach Bath"></div>
       </div>
       <div id="modal-price-line" style="margin-top:8px;padding:10px 12px;background:var(--ink);border-radius:8px;color:var(--brass);font-weight:700;font-size:14px;display:none"></div>
       <button class="btn btn-dark full" style="margin-top:10px" onclick="confirmAdd()">✅ Add to Quotation</button>
@@ -119,516 +110,4 @@
 
 {% block extra_js %}
 <script>
-// ── STATE ──────────────────────────────────────────────
-let curMode = 'nrp';
-let bathrooms = [];
-let bid = 0;
-let modalTargetBath = null;
-let modalTargetArea = null;
-let modalSelProduct = null;
-
-const AREAS = [
-  { key:'shower', label:'Shower Area', icon:'🚿' },
-  { key:'wc',     label:'WC Area',     icon:'🚽' },
-  { key:'basin',  label:'Basin Area',  icon:'🪥' }
-];
-
-// ── INIT ───────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
-  loadSavedQuotes();
-  // Load cart from search page
-  const cart = JSON.parse(sessionStorage.getItem('quote_cart') || '[]');
-  if (cart.length) {
-    addBathroom('Master Bathroom');
-    cart.forEach(item => bathrooms[0].areas.shower.push({...item, qty:1, imgUrl:'', bathTag:''}));
-    sessionStorage.removeItem('quote_cart');
-    renderBathrooms();
-    toast('Loaded ' + cart.length + ' item(s) from search');
-  }
-});
-
-// ── PRICING MODE ───────────────────────────────────────
-function setMode(mode, el) {
-  curMode = mode;
-  document.querySelectorAll('#mode-tabs .tab-chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('disc-field').style.display = mode === 'nrp_disc' ? 'block' : 'none';
-  recalc();
-}
-
-function getDisc() { return Math.min(Math.max(parseFloat(document.getElementById('disc-pct').value)||10, 3), 15); }
-
-function calcUnit(p) {
-  const nrp = parseFloat(p.nrp)||0, sdp = parseFloat(p.sdp)||0, mrp = parseFloat(p.mrp)||0;
-  if (curMode === 'nrp') return nrp;
-  if (curMode === 'nrp_disc') return nrp * (1 - getDisc()/100);
-  if (curMode === 'sdp_gst') return sdp;   // GST added at total level
-  if (curMode === 'mrp_disc') return mrp * 0.65; // GST added at total level
-  return 0;
-}
-
-function needsGST() { return curMode === 'sdp_gst' || curMode === 'mrp_disc'; }
-
-// ── BATHROOM BUILDER ───────────────────────────────────
-function addBathroom(name) {
-  bid++;
-  bathrooms.push({ id:bid, name: name||'', areas:{ shower:[], wc:[], basin:[] } });
-  renderBathrooms();
-}
-
-function removeBathroom(id) {
-  bathrooms = bathrooms.filter(b => b.id !== id);
-  renderBathrooms();
-}
-
-function renameBath(id, val) {
-  const b = bathrooms.find(x => x.id === id);
-  if (b) b.name = val;
-}
-
-function renderBathrooms() {
-  const c = document.getElementById('bathrooms-container');
-  document.getElementById('no-bath-hint').style.display = bathrooms.length ? 'none' : 'block';
-  c.innerHTML = bathrooms.map(b => `
-    <div class="bathroom-block">
-      <div class="bathroom-head">
-        <input type="text" placeholder="Bathroom name (e.g. Master Bathroom)"
-          value="${esc(b.name)}" oninput="renameBath(${b.id}, this.value)">
-        <button class="btn btn-icon btn-sm" style="background:rgba(255,255,255,0.12);color:white;border:none"
-          onclick="removeBathroom(${b.id})">✕</button>
-      </div>
-      <div class="bathroom-body">
-        ${AREAS.map(a => renderAreaBlock(b, a)).join('')}
-      </div>
-    </div>`).join('');
-  recalc();
-}
-
-function renderAreaBlock(bath, area) {
-  const items = bath.areas[area.key];
-  return `
-    <div class="area-block">
-      <div class="area-label">${area.icon} ${area.label}
-        <span style="color:var(--muted);font-weight:500">(${items.length})</span>
-      </div>
-      <div class="area-products">
-        ${items.map((it,idx) => renderLineItem(bath.id, area.key, it, idx)).join('')}
-      </div>
-      <button class="btn btn-outline btn-sm" style="margin-top:4px"
-        onclick="openAddModal(${bath.id}, '${area.key}')">+ Add to ${area.label}</button>
-    </div>`;
-}
-
-function renderLineItem(bathId, areaKey, item, idx) {
-  const unit = calcUnit(item);
-  const total = unit * (item.qty||1);
-  return `
-    <div class="line-item">
-      ${item.imgUrl ? `<img src="${esc(item.imgUrl)}" style="width:40px;height:40px;object-fit:contain;border-radius:6px;border:1px solid var(--line);flex-shrink:0" onerror="this.style.display='none'">` : ''}
-      <div class="li-info">
-        <div class="li-code">${esc(item.code)}${item.bathTag ? ' · '+esc(item.bathTag) : ''}</div>
-        <div class="li-desc">${esc(item.description)} · Qty ${item.qty}</div>
-      </div>
-      <div class="li-price">${fmtMoney(total)}</div>
-      <button class="li-remove" onclick="removeItem(${bathId},'${areaKey}',${idx})">✕</button>
-    </div>`;
-}
-
-function removeItem(bathId, areaKey, idx) {
-  const b = bathrooms.find(x => x.id === bathId);
-  if (b) { b.areas[areaKey].splice(idx, 1); renderBathrooms(); }
-}
-
-// ── TOTALS ─────────────────────────────────────────────
-function recalc() {
-  let subtotal = 0;
-  bathrooms.forEach(b => AREAS.forEach(a => {
-    b.areas[a.key].forEach(it => { subtotal += calcUnit(it) * (it.qty||1); });
-  }));
-
-  const hasItems = bathrooms.some(b => AREAS.some(a => b.areas[a.key].length));
-  const sec = document.getElementById('totals-section');
-  sec.style.display = hasItems ? 'block' : 'none';
-
-  const showGST = document.getElementById('opt-gst').checked && needsGST();
-  const gst = showGST ? subtotal * 0.18 : 0;
-  const grand = subtotal + gst;
-
-  let html = '';
-  if (showGST) {
-    html += row('Subtotal (excl. GST)', fmtMoney(subtotal));
-    html += row('GST @ 18%', fmtMoney(gst));
-    html += `<div style="display:flex;justify-content:space-between;padding:10px 0;font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--ink);border-top:2px solid var(--ink);margin-top:4px">
-      <span>Grand Total</span><span style="color:var(--brass)">${fmtMoney(grand)}</span></div>`;
-  } else {
-    html += `<div style="display:flex;justify-content:space-between;padding:8px 0;font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--ink)">
-      <span>Grand Total</span><span style="color:var(--brass)">${fmtMoney(subtotal)}</span></div>`;
-  }
-  document.getElementById('totals-breakdown').innerHTML = html;
-}
-
-function row(label, val) {
-  return `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--line)">
-    <span style="color:var(--muted)">${label}</span><span style="font-weight:600">${val}</span></div>`;
-}
-
-// ── ADD PRODUCT MODAL ──────────────────────────────────
-function openAddModal(bathId, areaKey) {
-  modalTargetBath = bathId; modalTargetArea = areaKey; modalSelProduct = null;
-  document.getElementById('modal-search').value = '';
-  document.getElementById('modal-search-results').style.display = 'none';
-  document.getElementById('modal-search-results').innerHTML = '';
-  document.getElementById('modal-selected-block').style.display = 'none';
-  document.getElementById('modal-img-url').value = '';
-  document.getElementById('modal-qty').value = 1;
-  document.getElementById('modal-bath-tag').value = '';
-  document.getElementById('modal-price-line').style.display = 'none';
-  document.getElementById('add-product-modal').classList.add('open');
-  setTimeout(() => document.getElementById('modal-search').focus(), 100);
-}
-
-function closeAddModal() { document.getElementById('add-product-modal').classList.remove('open'); }
-
-let _mst;
-function modalSearch() {
-  clearTimeout(_mst);
-  const q = document.getElementById('modal-search').value.trim();
-  const box = document.getElementById('modal-search-results');
-  if (q.length < 2) { box.style.display='none'; return; }
-  _mst = setTimeout(async () => {
-    const data = await apiGet('/api/search?q=' + encodeURIComponent(q));
-    if (!data.results.length) { box.innerHTML='<div style="padding:10px;font-size:12px;color:var(--muted)">No matches</div>'; box.style.display='block'; return; }
-    box.style.display = 'block';
-    box.innerHTML = data.results.slice(0,8).map(p => `
-      <div style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--line);font-size:13px"
-        onmouseenter="this.style.background='var(--paper-dim)'" onmouseleave="this.style.background=''"
-        onclick='pickProduct(${JSON.stringify(p).replace(/'/g,"&apos;")})'>
-        <div style="font-weight:700">${esc(p.code)}</div>
-        <div style="color:var(--muted);font-size:11.5px">${esc(p.description)}</div>
-        <div style="color:var(--brass-deep);font-size:11px">NRP: ${fmtMoney(p.nrp)} | MRP: ${fmtMoney(p.mrp)}</div>
-      </div>`).join('');
-  }, 220);
-}
-
-function pickProduct(p) {
-  modalSelProduct = p;
-  document.getElementById('modal-search-results').style.display = 'none';
-  document.getElementById('modal-selected-block').style.display = 'block';
-  document.getElementById('modal-sel-code').textContent = p.code;
-  document.getElementById('modal-sel-desc').textContent = p.description;
-  document.getElementById('modal-sel-prices').textContent =
-    'SDP: ' + fmtMoney(p.sdp) + ' | NRP: ' + fmtMoney(p.nrp) + ' | MRP: ' + fmtMoney(p.mrp);
-  updateModalPrice();
-}
-
-function updateModalPrice() {
-  if (!modalSelProduct) return;
-  const qty = parseInt(document.getElementById('modal-qty').value)||1;
-  const unit = calcUnit(modalSelProduct);
-  const total = unit * qty;
-  const el = document.getElementById('modal-price-line');
-  if (!unit) { el.style.display='none'; return; }
-  el.style.display = 'block';
-  el.textContent = 'Line total: ' + fmtMoney(total) + ' (unit: ' + fmtMoney(unit) + ' × ' + qty + ')';
-}
-
-function openJaquarSearch() {
-  const code = modalSelProduct ? modalSelProduct.code : document.getElementById('modal-search').value.trim();
-  window.open('https://www.jaquar.com/en/search?q=' + encodeURIComponent(code), '_blank');
-}
-
-function confirmAdd() {
-  if (!modalSelProduct) { toast('Pick a product first'); return; }
-  const b = bathrooms.find(x => x.id === modalTargetBath);
-  if (!b) return;
-  b.areas[modalTargetArea].push({
-    code: modalSelProduct.code, description: modalSelProduct.description,
-    source: modalSelProduct.source,
-    sdp: modalSelProduct.sdp, nrp: modalSelProduct.nrp, mrp: modalSelProduct.mrp,
-    qty: parseInt(document.getElementById('modal-qty').value)||1,
-    imgUrl: document.getElementById('modal-img-url').value.trim(),
-    bathTag: document.getElementById('modal-bath-tag').value.trim()
-  });
-  closeAddModal();
-  renderBathrooms();
-  toast('✅ Added');
-}
-
-// ── SAVE + PDF ─────────────────────────────────────────
-async function saveAndDownload() {
-  const custName = document.getElementById('cust-name').value.trim();
-  if (!custName) { toast('❌ Customer name required'); return; }
-  if (!bathrooms.some(b => AREAS.some(a => b.areas[a.key].length))) { toast('❌ Add at least one product'); return; }
-
-  const showGST = document.getElementById('opt-gst').checked && needsGST();
-  const withImg = document.getElementById('opt-img').checked;
-
-  let subtotal = 0;
-  const bathroomsPayload = bathrooms.map(b => {
-    const areas = {};
-    AREAS.forEach(a => {
-      areas[a.key] = b.areas[a.key].map(it => {
-        const unit = calcUnit(it);
-        const lineTotal = unit * (it.qty||1);
-        subtotal += lineTotal;
-        return { ...it, unit_price: unit, total: lineTotal };
-      });
-    });
-    return { name: b.name||'Bathroom', areas };
-  });
-
-  const gst = showGST ? subtotal * 0.18 : 0;
-  const grand = subtotal + gst;
-
-  const payload = {
-    customer_name: custName,
-    customer_phone: document.getElementById('cust-phone').value.trim(),
-    price_mode: curMode,
-    discount_pct: getDisc(),
-    bathrooms: bathroomsPayload,
-    grand_total: grand
-  };
-
-  const res = await apiPost('/api/quotations', payload);
-  if (res.ok) {
-    toast('✅ Saved — generating PDF...');
-    generatePDF(payload, subtotal, gst, grand, showGST, withImg, res.id || '');
-    loadSavedQuotes();
-  }
-}
-
-function clearQuote() {
-  if (!confirm('Clear all products?')) return;
-  bathrooms = []; bid = 0;
-  renderBathrooms();
-  document.getElementById('totals-section').style.display = 'none';
-  toast('🗑️ Cleared');
-}
-
-// ── PDF GENERATION ─────────────────────────────────────
-function generatePDF(q, subtotal, gst, grand, showGST, withImg, qid) {
-  const qNum = 'MST-' + new Date().getFullYear() + '-' + String(qid).padStart(4,'0');
-  const dateStr = new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'2-digit', year:'numeric'});
-
-  const win = window.open('', '_blank');
-  let bodyHtml = '';
-  let sno = 1;
-
-  const imgCol = withImg ? '<th style="width:80px">Product Image</th>' : '';
-
-  q.bathrooms.forEach(bath => {
-    const hasItems = Object.values(bath.areas).some(arr => arr.length);
-    if (!hasItems) return;
-
-    // Bathroom subtotal
-    let bathTotal = 0;
-    AREAS.forEach(a => { bath.areas[a.key].forEach(it => { bathTotal += it.total; }); });
-
-    bodyHtml += `
-      <tr><td colspan="${withImg?6:5}" style="background:#f0f0f0;font-weight:bold;font-size:12px;padding:7px 8px;text-align:center;text-transform:uppercase;letter-spacing:0.5px">
-        ${esc(bath.name||'Bathroom')}
-      </td></tr>`;
-
-    AREAS.forEach(area => {
-      const items = bath.areas[area.key];
-      if (!items.length) return;
-      items.forEach(it => {
-        const imgCell = withImg
-          ? `<td style="text-align:center;padding:6px">${it.imgUrl
-              ? `<img src="${esc(it.imgUrl)}" style="width:70px;height:70px;object-fit:contain" onerror="this.parentElement.innerHTML='<div style=height:70px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:11px>No image</div>'">`
-              : '<div style="width:70px;height:70px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;margin:auto">Image</div>'
-            }</td>`
-          : '';
-        bodyHtml += `
-          <tr>
-            <td style="text-align:center">${sno++}</td>
-            <td>${esc(it.description)}</td>
-            <td style="font-family:monospace;font-size:11px">${esc(it.code)}</td>
-            ${imgCell}
-            <td style="text-align:center">${it.qty}</td>
-            <td style="text-align:right">${it.total.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-            <td style="text-align:right">${it.total.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-          </tr>`;
-      });
-    });
-
-    // Bathroom subtotal row
-    bodyHtml += `
-      <tr>
-        <td colspan="${withImg?5:4}" style="text-align:right;font-weight:bold;padding:6px 8px;background:#fafafa">TOTAL -</td>
-        <td style="text-align:right;font-weight:bold;padding:6px 8px;background:#fafafa" colspan="2">
-          ${bathTotal.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}
-        </td>
-      </tr>
-      <tr><td colspan="${withImg?7:6}" style="height:8px"></td></tr>`;
-  });
-
-  // GST + Grand Total rows
-  if (showGST) {
-    bodyHtml += `
-      <tr>
-        <td colspan="${withImg?5:4}" style="text-align:right;font-weight:bold;padding:5px 8px">SUB TOTAL -</td>
-        <td colspan="2" style="text-align:right;font-weight:bold;padding:5px 8px">
-          ${subtotal.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}
-        </td>
-      </tr>
-      <tr>
-        <td colspan="${withImg?5:4}" style="text-align:right;padding:5px 8px">GST @ 18% -</td>
-        <td colspan="2" style="text-align:right;padding:5px 8px">
-          ${gst.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}
-        </td>
-      </tr>`;
-  }
-
-  bodyHtml += `
-    <tr style="background:#15171c">
-      <td colspan="${withImg?5:4}" style="text-align:right;font-weight:bold;color:white;padding:8px">GRAND TOTAL -</td>
-      <td colspan="2" style="text-align:right;font-weight:bold;color:#b8762f;padding:8px;font-size:14px">
-        ${grand.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}
-      </td>
-    </tr>`;
-
-  win.document.write(`<!DOCTYPE html><html><head><title>Quotation - ${esc(q.customer_name)}</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:Arial,sans-serif;font-size:12px;color:#15171c;padding:20px;max-width:900px;margin:0 auto}
-    .header{display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #15171c}
-    .company-name{color:#c0392b;font-weight:bold;font-size:14px;margin-bottom:3px}
-    .company-info{font-size:10.5px;line-height:1.6;text-align:center}
-    .logo-area{text-align:right}
-    .logo-box{width:90px;height:55px;border:1px solid #ddd;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999}
-    .quotation-title{text-align:center;font-weight:bold;font-size:14px;text-decoration:underline;margin:10px 0 14px}
-    .meta{display:flex;justify-content:space-between;margin-bottom:14px;font-size:12px}
-    .meta-left{line-height:1.8}
-    .meta-left b{font-size:13px}
-    table{width:100%;border-collapse:collapse;margin-bottom:0}
-    th{background:#15171c;color:white;padding:7px 8px;font-size:11.5px;text-align:left}
-    td{border:1px solid #ddd;padding:6px 8px;vertical-align:middle;font-size:11.5px}
-    .terms-box{border:1px solid #ddd;padding:12px 14px;margin-top:14px;font-size:11px}
-    .terms-box b{font-size:11.5px}
-    .terms-box ol{padding-left:18px;margin-top:6px;line-height:2}
-    .footer{display:flex;justify-content:space-between;margin-top:14px;font-size:11.5px}
-    .footer-left{line-height:2}
-    .stamp-box{width:80px;height:80px;border:1px dashed #ccc;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#ccc;margin-top:6px}
-    .bank-details{font-size:11px;line-height:1.9}
-    .bank-details b{display:block;margin-bottom:4px;font-size:11.5px}
-    .print-btn{background:#15171c;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px;margin-top:16px}
-    @media print{.print-btn{display:none} body{padding:10px}}
-  </style></head><body>
-
-  <div class="header">
-    <div class="company-info">
-      <div class="company-name">MST CERAMIC WORLD</div>
-      HO: LALJI ARCADE, OPP SAIBABA TEMPLE, SANTOSHI MATA ROAD, KALYAN-W<br>
-      Tel: - 0251-2208090 &nbsp; Email: mstceramics@gmail.com<br>
-      <b>GST NO: 27AABFM8508N1ZV</b>
-    </div>
-    <div class="logo-area">
-      <div class="logo-box">MST<br>LOGO</div>
-    </div>
-  </div>
-
-  <div class="quotation-title">QUOTATION</div>
-
-  <div class="meta">
-    <div class="meta-left">
-      <b>TO, ${esc(q.customer_name.toUpperCase())}</b><br>
-      ${q.customer_phone ? 'MOB - ' + esc(q.customer_phone) : ''}
-      ${q.customer_site ? '<br>' + esc(q.customer_site) : ''}
-    </div>
-    <div style="text-align:right">
-      <b>DATE - ${dateStr}</b><br>
-      Quot. No: ${qNum}
-    </div>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th style="width:32px">S.no</th>
-        <th>Description</th>
-        <th style="width:130px">Product Code</th>
-        ${withImg ? '<th style="width:85px">Product Image</th>' : ''}
-        <th style="width:35px">Qty</th>
-        <th style="width:75px;text-align:right">Rate</th>
-        <th style="width:85px;text-align:right">Total Amt.</th>
-      </tr>
-    </thead>
-    <tbody>${bodyHtml}</tbody>
-  </table>
-
-  <div class="terms-box">
-    <b>TERMS &amp; CONDITION:</b>
-    <ol>
-      <li>TRANSPORTATION CHARGES WILL BE EXTRA</li>
-      <li>ONCE ORDER PLACED CAN NOT MODIFIED OR CHANGE</li>
-      <li>MATERIAL MUST CHECK BY PERSON AVAILABLE AT SITE AFTER THAT, RESPONSIBILITY OF THEM</li>
-      <li>DELIVERY AT GROUND LEVEL &amp; UNLOADING IN CUSTOMERS SCOPE</li>
-      <li>ABOVE QUOTATION IS VALID TILL 15 DAYS</li>
-      <li>GST IS INCLUDED IN THE PRICE OF ALL PRODUCTS</li>
-    </ol>
-  </div>
-
-  <div class="footer">
-    <div class="footer-left">
-      <b>Thanks &amp; Regards</b><br>
-      Yours Sincerely,<br><br>
-      <b>FOR MST CERAMIC WORLD</b><br>
-      <div class="stamp-box">STAMP</div>
-      <br>GST NO. 27AABFM8508N1ZV
-    </div>
-    <div class="bank-details">
-      <b>● BANK DETAILS:</b>
-      1. BANK NAME: BANK OF BARODA<br>
-      2. A/C NO: 99140400000293<br>
-      3. IFSC: BARB0DBKYAN (FIFTH CHARACTER ZERO)<br>
-      4. BRANCH: SHIVAJI CHOWK-KALYAN WEST
-    </div>
-  </div>
-
-  <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
-  </body></html>`);
-  win.document.close();
-}
-
-// ── SAVED QUOTES LIST ──────────────────────────────────
-async function loadSavedQuotes() {
-  const data = await apiGet('/api/quotations');
-  const el = document.getElementById('saved-quotes-list');
-  if (!data.quotations.length) {
-    el.innerHTML = '<div class="empty-state" style="padding:20px"><p>No quotations yet</p></div>';
-    return;
-  }
-  el.innerHTML = data.quotations.map(q => `
-    <div class="list-item">
-      <div class="avatar">${initials(q.customer_name)}</div>
-      <div class="li-body">
-        <div class="li-name">${esc(q.customer_name)}</div>
-        <div class="li-sub">${esc(q.customer_phone||'—')} · ${q.created_at?.split('T')[0]||''}</div>
-      </div>
-      <div class="li-actions">
-        <span style="font-weight:700;color:var(--brass-deep)">${fmtMoney(q.grand_total)}</span>
-        <button class="btn btn-outline btn-sm" onclick="reDownload(${q.id})">↓ PDF</button>
-      </div>
-    </div>`).join('');
-}
-
-async function reDownload(id) {
-  const data = await apiGet('/api/quotations');
-  const q = data.quotations.find(x => x.id === id);
-  if (!q) return;
-  const showGST = needsGST();
-  const subtotal = q.grand_total / (showGST ? 1.18 : 1);
-  const gst = showGST ? subtotal * 0.18 : 0;
-  generatePDF(q, subtotal, gst, q.grand_total, showGST, true, id);
-}
-
-function esc(s) {
-  if (!s) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-document.getElementById('opt-gst').addEventListener('change', recalc);
-document.getElementById('disc-pct')?.addEventListener('input', recalc);
-</script>
-{% endblock %}
+const LOGO_B64 = "data:image/jpeg;base64,/9j/4QFGRXhpZgAATU0AKgAAAAgABQEAAAMAAAABAkUAAAEBAAMAAAABAbQAAAExAAIAAAAkAAAASodpAAQAAAABAAAAbgESAAMAAAABAAAAAAAAAABBbmRyb2lkIEtMOC1IMzUzSEotVS1JTi0yNjA0MTJWMTcxMgAABZADAAIAAAAUAAAAsJKRAAIAAAAEMzUyAKQgAAIAAAAlAAAAxJARAAIAAAAHAAAA6ZIIAAQAAAABAAAAAAAAAAAyMDI2OjA2OjI1IDAxOjI3OjM3ADAwMDQyOGRjLTc1ZWUtNDJiMy05NDI2LWM3NWYzZWE3ODg5NAArMDU6MzAAAAMBAAADAAAAAQJFAAABMQACAAAAJAAAARoBAQADAAAAAQG0AAAAAAAAQW5kcm9pZCBLTDgtSDM1M0hKLVUtSU4tMjYwNDEyVjE3MTIA/+AAEEpGSUYAAQEAAAEAAQAA/+IB2ElDQ19QUk9GSUxFAAEBAAAByAAAAAAEMAAAbW50clJHQiBYWVogB+AAAQABAAAAAAAAYWNzcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAPbWAAEAAAAA0y0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJZGVzYwAAAPAAAAAkclhZWgAAARQAAAAUZ1hZWgAAASgAAAAUYlhZWgAAATwAAAAUd3RwdAAAAVAAAAAUclRSQwAAAWQAAAAoZ1RSQwAAAWQAAAAoYlRSQwAAAWQAAAAoY3BydAAAAYwAAAA8bWx1YwAAAAAAAAABAAAADGVuVVMAAAAIAAAAHABzAFIARwBCWFlaIAAAAAAAAG+iAAA49QAAA5BYWVogAAAAAAAAYpkAALeFAAAY2lhZWiAAAAAAAAAkoAAAD4QAALbPWFlaIAAAAAAAAPbWAAEAAAAA0y1wYXJhAAAAAAAEAAAAAmZmAADypwAADVkAABPQAAAKWwAAAAAAAAAAbWx1YwAAAAAAAAABAAAADGVuVVMAAAAgAAAAHABHAG8AbwBnAGwAZQAgAEkAbgBjAC4AIAAyADAAMQA2/9sAQwABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB/9sAQwEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB/8AAEQgBtAJFAwEiAAIRAQMRAf/EAB8AAQABBAMBAQEAAAAAAAAAAAAJBwgKCwQFBgMCAf/EAGwQAAAFAgUCAwMFBwwMCAkLBQECAwQFAAYHERITFAgVCRYhFyIxCiMyQVEYMzQ4YXe3JDU2NzlxdHaxtba4JSZCUnV4gYSIobTRGVNWYoeRs9dFVVdYZGWWl8EnQ0RGR1SVstXh8GNzgtPx/8QAHgEBAAAHAQEBAAAAAAAAAAAAAAEDBAUGBwgCCgn/xABAEQACAgIBAwIEAggFAwMDBQABAgADBBEFBhIhEzEHFCJBI1EIFSQyQmFxgQkWM5GxJaHRF1LwU8HhJjRDYvH/2gAMAwEAAhEDEQA/AM/ilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiK/ghmGVf2lQPgH+hicfSBRNln6iPx/fGlf03xH98f5aCGkAEfrDOqE2Ws/b2toe3nf5fbX9z/fcBV8a1snR0PI9vf+2jPwc4gBQ9Pr/wDh+WvnqHMR9Mx//b/dQ5gEM/X0zr5aw+wf9X++qhVsQbJOj5/udfzP9/7zw9N5JKM2ifGlGgNgfn958TqG9AyD7fr/AC/lr6oGHIR9MwMP8gV8NYfYP+r/AH1ySGBMQ1Zj8R9Pyhl9eVQrosLd+217jx767d/xe39fEplw7gzWsWX7na++te57v/tPuoYdvP0zAC/yh/vriCoYAEcg9AH7f99cKSkkG6Z9ZFhyKQfdKQfiqBfrUL9f+qqV3HibAwaRzO2kuoCab0xuM3ZHEQaFKKmW6/R9TZ+5nln/AHWmvF/IUYn+rYg0PqBbt8+3n6T7nXn7STfy2Nhj8WxAFH1dzFfPgf8Asb769v6Ss6axhAByL6AX6h/31ziGExQMOWY5/D4egiFRq391n4XWwRyD+Bv5YUyy4G4cXbymfBAu9lvXS3+lqDbzyz9dWirn+m/Fu28XrDgLotplNsWEqznXDdGcbMGzwhIy5nsMuCybCSk0SmO6bHURAjhQDICQxzJqCKRbfhc1j5+S1FNiMyoXbtfuOg1a+xRR/GBsGUnH8/hcnkNRRbW1qozFVsLN2hq135rT/wBw++/P95cbSlKvcvsUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkT4G+I/vj/AC1+FDjkAenwEP5Py1/Ffj/lN/KFccxw9Q9frD/+etQC1hgfGx7n8hof871uS6S3qEvvt/n7ewH2/Ma/+bnzVUMTMAAPgPxz+wPyh9tfAqhhAByD/X9v79eSu67421Gi7qRQfLJlaPXIgySbqH22TciyoAC7lsXWYqgAmGoCiYBAxiBkI2GYtdcuEtlrKtZS3sRXCiMgxbmGPibaVIJ3MWd4QSi4u5qYSgl7pxEoCCnoBTF96rZyvM4eDSVd61YEDzYVO9Enx2N+UoeS6o4rilK5N1FbI2iXtZD7b1/pN/f+m5I9XSzky6jkjqIJoGMVNIwAqVQwZnX2xz0KkHLSOYeoevxzD0qAK/PFGwAJxgG0MYf/AJkfS37K/wDTPtxBD7KjTxq8RjBK4kFkWVrYqJGUjI9IBdQlpEKBkZdRwYRFG+Fx0iT0KIAIib0EAD3qwPkPijw/HUFGuxzaqsdHMZD5CkA/sjj7j8/aas5/419PcfW9deTiOwVvIz3rO+1Toj5F/O/GyfMyZMX+oG8rUJJBHRlsrA2SbiTmspVTMTS52g69iabZ/NlAwZaffzH1L7tRLY5eIBjJDnkkGttYZqERNdaJRXhrpMYStRIRMTCneaQCYQ+mIAACP0QKHpWNVir1HWPdsxJKR0VdaBXJjgmD1jEJiGmVcux17E45APmzgUNIm9/MPo+8Nps5NtJV+J26bggOXbkxN4iZRAHKxRT16FVAAQAQ15CbL+51VpzmPir89ZZXjWbLuQvZm9xIDA+AcNfGhr3HvNA858aTyF1lWC/d3uQDXyHd7EEeDgr40Pz195MXif4gmMs7MoRru2cMU0H8nMMljtoa6iKlSfOmyCpkjK3osQqhSHEUxMmcoGyExDh6DlFeEvd8lefTDhdNSiDFB09hMSDqpsEnCTcotMX7jYp7ZHDl0oAGSRKY+pU4ioJhKJSiBAw5ui/pfv7ErECzZOCl7PaINLxwsfKElpCaQWMjLTYuG5SFZ2+/IKhCNVAWAyhSlMJATOoAmMXPA6PcOZvDTB6zrcnXUU7fRrO6El1Yld2u0OZ/esvKIikd4xYLGKVu4IRUToJiVYDlIByAChtg/C3Izs/JvzckW9podB3sHG/Xo1pgF8gIR+75/P8APZ3wYy+V5Tkb87LF4o+UtQd7CxC/zOL26cKnkqrH93235l2dKUreU6VilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilK/J/oj/AJP5QpE4bg5SgI6ihkI+oiGXqIB9dUqvzEa17Mi372avO2LaBBhMOiOJubhYxMgRjfecLCaTcJJCRlqIdyJs00SmKK+RTBn7S5JTtUa5ebHI2TJht7u1q1uUUvp7amWW5q+iOeWXpnmGNx4nXXB5QaSFq+zDuPJb422/z/OvE0cJOLjuXxfKTnVu7+9x+QXRp294+rWGKdVc0nC4duR36cIpC/ijyWRfetSfudH+kwjrbqivpvAe7ahxWrbPrg7Zwu+6lSfG/wCvt9p3nXX4hcpbkq+iMOupHDQW5IW4CmaRkrhNPKFVWtu312xDGcM5JcDrOXDsUSCfNUwmTIBiplKTHcxk64sebomHwnxcjZZEz2OXIdpb2HJyGMjDkbbhTsrcKBgT1GSNkIlA/oYNYBlaFihib5+uB9Mdk7Ty00ycbuXP29EcxY573AZ68+Ju5bRctzRmOjWakQF1HE2eWYfD4/DIPyfZXIfUvxMzsnOya/XtFYtYLrKztDQHsp8DXkDx7Tg3rn4sZ/I5WWtWZkKDe3hMvkVCgKRoBu0a3rwPzlXpfHrFaSOTl3WC4EKXTlB20TISirl6ow5M8tw3xz+Pr8Ay8AveFyyhg58gK+ZQTH9RsUvcIIqFD5lqn8DiJs/iPwERD0rozt/gOv8AJ9H98f76uEi50jq0Z5CPpqy+IZf3o/bWts/ksrmL3NV9xDaXxdaAO4KPaxl9tHU0xbyHJcsfOXluWIH1ZVrfvaHvZYPy+87VQnIUFQSio4NmI6c9QiIiY+RCZB9ZhEAL6Bn8AD0q1hLhFel/3XBs47Dq9LpZK3DbLZwSEtu435Ray0kVIhTKxLUxyFfIpqA3UBQp1AIczc+ZRMHscCMCfa/IR5PNPl7lPpFnn2Pu23xIMJbcy7vGatzc4+jMujLd1Gz2wycegPw9fKxou4va7ztJsJprh+QeLnwRfPuNyPOrj77r2t7Y9zLXtHz0BsDoboLP5PJx7bansrLHZezDfY9Pu9rLt/fft/3m3/hr8OuQ5TLxrr6rLq3sJJtswrRr0gRtbbyx9/y/nLmfD+6MbCs2CtmZlcHLmt2Z7Tg/JqLzK2IUecJOOZuXThUzaSlE0CnZu1NblDYBJETAmskUggSp2rfi2URHN2TFuLZuiVcE0hUWUEgKuVFj+8uoooOpQ5je8Ycs8i5FAADw9qQPY2Mcy5fK4rSMa7uxsbnDRKluaN5bTuZatOs2j4ajfGqmNvoB+8b/APNXZnTnA08HirVXVWhK6JWulCTsE79LwfPmfoP0t03i9PYVdNGNRSSn1NXRj1MSWDHZoGj5/Mzk0pSskmVRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRX5P9Ef8AJ/KFfqvyf6I/5P5QqB9j/QyB9jr30dSzfrIxSLhbhDPz6V3wlpPEzsAbPph1BoJ+t1WyxXAhZwp2qgglICgfNM2gzlMfdVFIwYG/Wz1IX1ihiNdrSSxAi7ojmN7YqNo4I5naO2RlLzpEjAReFjUDrkeINEARWUVUMYqetucBMcxsqvxvb68tdO6rftfN5rp4TXzuNtcLEPCz108NfXu73w1E0afifP0wX7nf8+55h/tbXMnpN3tbmvb5Egqtt7mgmvRr069BdWWekueQct/FDqXKfPyuLqssPp10jtF16glgtnkEivY34IPtr7icefHnqXJqtyOOrtsHZTj+Bdev7zq/kAhPOwNg+3vOMXUpmZxnqHLITBozyzAcgDSA5ABfgH2fbX92VDCOwkocf/6ZDH936x9AN6Z5AI/UPpXaxMb3py3bb3G1OW6Gvb3suSrt6tO4lno056dXvZ5Zl+NXhYTdKfn0Sm8+dp1xr13l5X52XGk0WW3n5iZ569e7r9NOWjSbPWGgMXpXlOYyXsWu1vVct/r42vLAbHq3A/7+ZyXwvSHMdTZj2KlzJc7sAMnFIOnVfa/IU+Rs+QDLTIyy73ndZIW0bomDp6jKEi7elZAyZCbYHMcrRmqJSlFZIDGMAAUVUwEQE5c7y8DuiPF+8ZRmnPdM2N0nHnkZNs4OTDjFBsiBW8KLtFM67COb6DFcGTU9FCnNqKQwmIYCjNf0weF9pVl3Xtxz+bft9v2af8631Ner2gf/AOOnT+XV9VZDGDnT35CQ0eb+6/2Vevc+wcH8Ji2zLay708+htbmvP3tWjQXLWO6Ok/hFcXqfKqbsZ0LFhx1ns3tr1WJ2N/adDdIfA3JLVtl47Fe5CS44q3wG2fHrufbx7f8AiRS9EvhrYLwNoWzKXZ07XhA3CKounZpyRxfhnBFXllRSLlRVk8uFqkkCjtR0hlxyEIuB0UykOkBCTU4fYMWLYEe0a2vay8OmmzhkATPI3A8EpIlEybIgjJyLs+bYqhyiJh1KCPz4qCACFaGDDiNUEd3c2kkyatGjVoSITPTrNlnpzyzHLPLMfjXY/APtyD+QK6e4LpjjeFxqa6cbHD1oAXGLjo5PYqklq09/B2QfM656U6G4/gcWgV4uOGrRfrGLho3d2Kp2al2T49wfvOtRbEJtfNmLlo+Ov0yy+0fqrvEAAAAA+GQ//mrg6tQl9Msh/wDiFc5H4B+8P8tXhMhbGKDQKbGgD99a+2vv9pnAdW0q6+ka0AR9h/Qf7T70pSp0jFKUpE/gmKUBEwgUAAREREAAAD1EREfQAAPiP1VwDS0UVcGppOPK5ExCA3M9bAuJ1dIpkBEVAUEygGLoLpzPqLpAcwzpvijiR7P7flZfs3duBDXDJcfuPA3ezMuVs7vBe6OTno3No+z9LbV+jUStr+JL5w6nCYSexjt2i+sJrc8we0Xl5+eSQ/6s7V5Fa5dr5X4P3Iebo+/tNXuok4ICAhmAgID8BAcw/wCsK/tcGNX5LJFfRo17nu6tWWlVQn0tJc89OfwDLPL8tc6kRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRXzV9EzZfk/lCvpX4UDMggP5P5QqB8gj8wYkAfi54YYg4v2hF2vZcMpczo0teAGi15eIYtzFTuuwX6QG77JMGQgRCLcrkAT5EM3KBQBUyJTwd2X4V3VHcS6btHpxtySSUVjXJlXF04LCJ03hzqgoYHd4FUEVylExwEusRDJQANkFZj2J+DNr31KM1pd/PtzIvJtcoRzqORKJ36rZVYDA5i3giUpm5ATABAQKJgMJxEBL6GzcLrftVsmjHPJhYpEI5MBeuGShhKwTOVERFCPbhmYDju5AAGHLSBPgOqM74dYvK81k8hkPkFbnTwl2Nr6Kq0AC2YthA2Pux/Ma8TSXUvw2w+ouXvystsgra1Y1XdigaREH7t2Jcd7H3JHj7eJjh4D+FTitCLIr3v0r4ciUklDLid+fBCYEG7eRfKOzfMzz42QNzIaiAGpQoFIUpxJpLMJg10X2FaUc0TmenfCSNdEYSLdUSWVhqufUvL8pJMVGLZcDFOgBVPQwkLkBTCBwAoSGsm5ESGIUTiAZephAR9ROP1FAPiI/VXYEKHw9cgD/4//vWXcZ0ZxHEorIljaBA9RcV9+QfPZiof/wDP6TMul/hnwPA41bVJezhfJuGC48sG968Go++vv7bngYPDyzILcLF2VakQCmsxwjbfhmQH17IGE4NGqYGE2ymBtWYjtJ5/QLlUFu0SR9CN0Uw1CORE0yhmJQDP3QD1EAyz+OQfZTbLnnmPwy+r/dXMrIqxTSPw60Xt9voUa9jv6QPt+X3mZUU41K2CupF7RsarQa8e/wBKjz434/5n4z98AD4AGWXwD0z+qvsQAHPMAH4fEM/tr5AUAHP1z9f9dcgoAAZ/aAVN9Zm14Hn7efO/z8z2lzu6qQoQDyBsHx/UkflOOYvvBkAAAGHPLIPrrlo/AP3h/lr5GKGYfH3h9f8ArD4f9dfZMMhyD7B/lCiUJUO8Elm996158+NAH7D3MqDWiKCu9k+Sdfl41oA/b7z7UpXzUOJCgIZfEA9f3h+wQ+yvc8zy103pbdpR7h/PSYxzZum3VVWBpIOhIm4dkaIm0MWrlU2twcE8ikES56jgUmZqhP68/Fl6S+ne1pF3dnUpcWH6rWVlo87iItDG9ZZNxGXRbUS6QKpallPlBKgvJJtQMQRSOm5UFEx0N4xaEeJl4kGOOCdvy7S1bVwpkEzWZZ8wJrgg7vdn5L7EReKWTAY6+YkuwVu1TOmXTuAsY5jKnIJUy6+rxIvEPxq6kpGftC+bYwuio09532cV7ThbsYvgE14QMuOSsxe063y5MG0IGbYR2FHBcxUOkqiiTv8AXX47ODuJNpS0Tgn1341OZJe3cVI4qEOt1N2mKj6ajGba20TLSdtwaGai6bgjdUyoJMPfOuo2IoBjWteBx1DYnYx9ahJa58Y8TMREVMfujtEju8L1vKeVMiveErHu0v7ZH664JrpxyTVcglAqyDRBM4GRTRAMTlQ4qKHUNkBlDmOIBnkAmETDlmIjlmPpmIjl9Y1kb/JvPxqmX+MF0d/pGuykTbQ20ImhGQmETCPJzERERH9VuA9RH1+HpXe10NsfrGx/zn/bHFd9SIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlInGdEMcmRQzEPygH1l+0Q+wa46aKmkQ0+ukA+JfjkP5a7AQzDKgFAueWfr9tR37fyO/8Aj/xA8EH8pwSIqAJgEv2fWX8v5a5BSGAAAQ/1h9v79fbL1Efty/1V/aiWJGjqey5YaOvt7b+2v5/ynx0G+z/WH++vtSlSggBB8+P6f+JL15J/PX/aKV/DDkAj/wDz41+AOIiAenqIfb/vqPaNg+fA1Iz6UpSvURXUzJgK1TEw5ByCh8BH121fsrtq6Se/A0v4ST/slqRNOj4wt6WzJ432y1YyW+urgtagJp8OQT1CniJf6p/eWapkDJMpje8YM8sgzMIAMKipgMqqYo5lMocwD6hmAmEQHIchDMB+v1qTHxWfxh7N/Mxbv9OMRajKpEVkdfJvPxqmX+MF0d/pGuyscWsjr5N5+NUy/wAYLo7/AEjXZSJtoLY/WNj/AJz/ALY4rvq6G2P1jY/5z/tjiu+pEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkRSlKRFKUpEUpSkTrJuWbQMLLzrwi6jSFi38s6TbFTO5UbRzRV4uRuRVRFI650kTFSKoskmZQSgdQhREwR6X54oGAWHlxyVsTVoYwOn8WZkRwtFwFlrszi/jm0mjsqO8QGSxgKg6TIprbp5LFOUoHIBVDXd9RUo+g+n3HWbi1+LJw+DmJ0pHOtpFbjPo+yZt20X2XKazdbZcIpqbS6SqKmnQqmcgmKOqj8TjxMOtbD7q3xbti0sbSREJGO8OysmI4dYSPxQK+wntCTdByZSxHrxTdeul181l1BJubaYkRKRMqJsbP+F66a/wDkRjj/AOzVhf8AeXT/AIXrpr/5EY4/+zVhf95daoX/AIWjr9/84En/ALrsE/8Au5p/wtHX7/5wJP8A3XYJ/wDdzSJuNOn7qrw86kIk0zY8NecU1LNvoEU7rjoNivzGEMwnFlALEXFOp8YzSRQTSPu7pnJVSHRIkUix673TcrC04aSm5FJ2s0jIySlV02SaKjg7eLanduCIkXXbJmWOmQSolOqmQx8gOomX3gwsfk6HiA3pdXS5cN+9S/UFYsUpE9QV5Ra9xXqphXh3GsYRTBjCc0Wm6VRjLaikUnFwTDpu1duCAq6euyMCrqiVu3Jb14oHjy9Qll3pedmdPfXXhC6txG6MeLYVjbWbdMV9ClCRkq2irUYqO3VpXC/JqYGeN2TkzoHklpVVUcO1kdwiJkE9R/jR9LmF7i5omfsLH145g1r6jnZ4e1sO3CCi9unFs9M3M9xTj1DpKqEEWplU0TnJkKxEDe6EO1y/KSOhtliClDq4VdVxnIy8C33E7GwhFDW7bx50x1Gx0IppKCxdY7WYCBtJTAACOEJjD4kHWBibP3M4unGpCfTlZi61l1kbDwoaJuiT71U8gomeHslmQCPSiBiGQEpUyiAtRSAatAf4t4gSU2W4Htwb0sVyydg87VCJ5OGBEE2qmwlGptR2iN0g0ijoPozUKcTGEyJtSsDvHi6Q7qimTmOw56kESKx8msUHtoYYpnAqE0LU4GBDGBwAGFQMygBhASeoiBvdrIKwgxgtrGKDfTtssZ1i0YyzmJWTnWzBq5M5as4x4odMkfJyiQoClKNykMZYigqEWAyZSlIZTSN2j1w9T1jtUWlr4oFi0EUXDdNPyZh490ounYvVyapG03Zx1uR3dRjCYv0CGKn7lZTfhm+O31ZtpK7LcxS62MOIG3xYz02za3Pb3TRaxFJgV7CYt3CLxxY8Y6WMdkWQTTbA5O3UBFwqCBlG5lE0TZSV4m/r6iMPLed3HNN5F0xabG4lFotl3Rt98zYE0EdvGSI5LPUjG1LlyTKoIZmApD0Dujqmwgh8M7jvgMesImUfCvWDRe5V8QbCLDRyrqShmZUHb5xJDFoKrmk0UEyOTAoZV43KmG4qhnhB+KX473Uxbd23pYuBvXDhW+tthiRifBBE2zGdM15nbwtuX3CoWu2VdrWdOSRSt2TZzsuVXQuH6bddZ0u7Mkc5UTJL6kPGZ6X8LXFxxVwWHj08cQq18x7o8Pa+HrhFRa3VOM9M3M9xRjznSVOURamUTSOcmQrEQH3ahqur5SR0Nx+I60KthV1XGdBIwKIqJWNhCZvrdtI5RMdZ8dCKaSlXIBx2swEDaQMAAI4SWMviTdYWJs9cTi58bW9wJykvday6yFhYTNU3JJ96c79Qh4eyWZAI9LkYhkRKVMuQtRTAas0kcWcQJWeNcb+4N+YOuzcGe9qhEs1mCSCLU/HRjU2obSbZEukEAIfRmoU5jHEyJtdOmnxz+kq/4KOXhsPOopsRWKmXZQk7Sw0RMCbW4zMVCiDXFx6AHMsYDEABEop5iYxTe5WQHYuIENiDBsZ+GbSbZnIJvFEUpNFqi5KVlILxyoKkavXqRRMugc6ehY4CkJTGEhxFMNIlhx169VOGaCTKzcWCQbVuzdtEUzWThrIaEHsgWScp7kvaD5QwqvM1tRjmOT72mYqXuVlv+F948XU5PXc7tPHrrjwsi7OjMNLpkoxrdkV0yWQ3SuUb+twGYFkyWbAvF3akXIzKqUeq9VTWbmVcg2ODVJVFE2I9K8VY95QN5xi8hB3LBXK3RkFmJ3kHKRkm2TcJNmrk7U60YssiVwmk5SWOkYwKlSWSOYAIcgj7WkT+CHqA/Zn/AKwr+HOCZDnHMQIUxxAPjkUBEcsxAM8g9MxD9+uvlpSPhmKz+TkGUW0R29x5IOm7NqluLJok3F3J00Sa1VU0i6jBqUUIQuZjFAYG/EG8Ru4sHnzGKwe6lsNYV8V3inHzMezkMIbket3dvLQraFZO205HzThm6aLLyCAIGIis5VBVN0Vc6BQTx/qLqXjemMF8/kmsNSdv4VBxze/fYlQ7Evvx1bTOCfrH0hj5I0du/Bv4Kda/HHqzD6R6MpxVzcs3j57k6+WXisb5bDyM2z5rK4riuWup7qsdkT9mbdtlSntVi6yrY49U2H2CAtGl1w95SCko1ljtzW9HwjshAjWkc4X3hkrhiTFE5JVuCWgqgGMRYDimBSGUsDvfxSOn+JOfkWfjEfJ03T+Zt+yje8dmZUB+cxBT9AKAgP15/ABD1rFj6mfEx6sMRpGEM8x5jLkTbJzCQnjrNwhMREj1pBIqFOaIs1IC7xWgEKJxzAUT7YgYFBGyyY6qMdZvMZO/CuhFUio/2s2aj76aRkSGyb28l9FMRLl9Ec8xATetc3dRfH1TmZNPFU5iY6Mop+ZwcFm7TWhPc1fIWAnvLexPj+c/a34Of4R7J07w2f8AEDP6fyeXvpubkf1L1V1TRUbFzLlr9KnK6Rw2rHy6VAhlUliWHggzKDm/Gj6XGjtNNSwsfTGM3IcBJa2HYhkKipch1YplHPMo/Vlll6/Z+7c8aPpcezLNslYWPpVFeRpFS1sOwIGhquoOYlxTOYMykEAyKPrlnkHqGIo7vO5XyhVnUluqFICZTcNgTIgGMYC5JtSFHIxzDmIZ+uWeQAAfphelyxztJ40ktlwjubanDj1NO4kdI/uKtTpjqIcxfeKOWeYZGABDXn/rR1R6oc2Y3Z3qxHyFPcVBGx/ra3revP8Aedln/DK+An6vsxxh8/8AMtjW1K56u5H0ha1bKhbXH93YGI7tITregTqZ7OHXij9P802h1Gtn4xJlctkzpg4t+yiCAGiyLgB9vEFUAHQYAHSJg1Zhnl71SC4TdS9iYsIEG3Ym7WWlKBz70wh236+kW4mXBnpH73xz8n+8zLtb2Y6dcNBdVeO9upNkoe/SsyMyAk2L5ZsxxtplblalLm6t5cT5IFBPNQTiOWoR15mq+TAPxO+rOyTKpt8fYqCTA1rkID6zMHiBojReFIAGkrMOIg2Kp84OYiGsBWEcwGti9OfHxBkU08tVmPWRpzj4OAn7tZ9mfkK9fWB7/b/acW/Gb/CPvfi8/P8Ah/yHTuPnVlDijmeqeqshQGy6wwerF6QzCx+XsYeN6fz7Dc2EhTAYpTBnkYoGDP45CGYZ/H1r+1D70A9dBscIZNviH1B4b3XcQxmFSJGCMzhhFyIzVytJQks0LHW6hGKmev3zZBErIG4qIrk2GiKJjHIaXts5QdIkXbrouEj6tCyChFUj6TmIbSdMTENpMUSmyEcjFEo+oCFdL8HzmD1BgU8hgMxpuUsEdqTammZCHWm65VO1PjvPgj7+J+IXxQ+FvVXwj6r5Ho/q2ipOS42yuuzIxKuSXAyPVx6MpHxbeT4/jci1DXkIO5sWv6g2gVAZuumpprBNU3jxNwoko4I2KVsRM6gHOmqqAiCqqJdGlEwCIGEcxKAFEBEQi8uzxZenRgRBstZeNZlDHTXAUrcsUxNBgcpgAifEchtWogiIacshD1zzAL5OoWYkYSy4x1GOeM4Uuhk3OpsoLZoniZtQxNDhJUgZnSTNqAoGDTkBgATAOn1xf8VLruZ3Cxat8eSJIGhmzgUxwzwaNmqL6TTE+pTD0x/UhCl0gbT6Z5ZiIjeJrmUJ8R++ojEHHC1ZmGbyLZq2wpg4xROTRbIuBcI3dfLs5yEavHqYoim9SKUxlSnE5VAFMCgUx4/q9beV7XNfsmhMXXJ92kWzBKNRccOPY6GSLh06TQ2o1ozQNpXeOVNw6RlR3NJlBIRMpfJUiKnb8BzGq1sE+o5pP3UwuCQZlxt6XJgUrfaxzpzxrbvu5Hr5MCSMrFJb6qTghWhd7bUUA4LKoFADmgkqqeFWMuI+DM0Sew3uQLalSSkFLldjEQMvlIW47Wew7jYn4uUbDw3LhVXaFHYca9DpJdMpSlRNxzb/AIuvTc3iGiJ7JxvExN/MS23YYl950sYMhHEoo/AwZ+geuf79XGYAdfWDvUbeElZNkW3iXFSsXbLy6nDi6oe1mMeePYysNEKooqxF5Tjkz0zmcaHTTO0TQFBNwYzgihEkltQcl4sfXygmVJLH8hSFz0l9l+ChstRhMPqbDoRHMREfUR+OQelZJ3yXjrw6qeoXr3xcszF3FYt4W3GdH+IF0Mo0LJw3gRQnGWNOAES2fcy17QhX6m0wmpJvxlnSjM/J3VG510W6iSJsg6UpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSIpSlIilKUiKUpSJQvqh/Fn6ifzF4t/wBALgrTceLf+OxjX/DcL/0L2PW5H6ofxZ+on8xeLf8AQC4K03Hi3/jsY1/w3C/9C9j0iRhUpSkSbro+6xcMsHOhHFHCm54K+31xTmKbS5Gj2BjLf
