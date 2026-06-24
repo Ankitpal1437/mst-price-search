@@ -2,59 +2,81 @@
 {% block title %}Quotation Builder · MST Ceramic World{% endblock %}
 
 {% block content %}
-
 <span class="eyebrow">Bathroom-wise Selection</span>
 <h1 class="page-title">Build a Quotation</h1>
-<p class="page-sub">Add bathrooms, pick products by area, choose a pricing mode, and export a client-ready PDF.</p>
+<p class="page-sub">Add bathrooms, pick products by area, choose pricing mode and export professional PDF.</p>
 
+<!-- CUSTOMER DETAILS -->
 <div class="card" style="margin-top:20px">
-  <div class="card-head"><h3>Customer</h3></div>
+  <div class="card-head"><h3>👤 Customer Details</h3></div>
   <div class="field-row">
     <div><label>Name *</label><input type="text" id="cust-name" placeholder="Customer name"></div>
     <div><label>Phone</label><input type="tel" id="cust-phone" placeholder="Mobile number"></div>
   </div>
   <div class="field-row">
     <div><label>Site / Project</label><input type="text" id="cust-site" placeholder="e.g. Lodha Heights, Flat 1203"></div>
-    <div><label>Architect</label><input type="text" id="cust-architect" placeholder="Optional"></div>
+    <div><label>Architect / Builder</label><input type="text" id="cust-architect" placeholder="Optional"></div>
   </div>
 </div>
 
+<!-- PRICING MODE -->
 <div class="card">
-  <div class="card-head"><h3>Pricing Mode</h3></div>
+  <div class="card-head"><h3>💰 Pricing Mode</h3></div>
   <div class="tab-row" id="mode-tabs">
-    <div class="tab-chip active" data-mode="nrp" onclick="setMode('nrp', this)">NRP</div>
-    <div class="tab-chip" data-mode="nrp_disc" onclick="setMode('nrp_disc', this)">NRP − Discount</div>
-    <div class="tab-chip" data-mode="sdp_gst" onclick="setMode('sdp_gst', this)">SDP + 18% GST</div>
-    <div class="tab-chip" data-mode="mrp_disc" onclick="setMode('mrp_disc', this)">MRP − 35% + GST</div>
+    <div class="tab-chip active" data-mode="nrp" onclick="setMode('nrp',this)">NRP</div>
+    <div class="tab-chip" data-mode="nrp_disc" onclick="setMode('nrp_disc',this)">NRP − Discount</div>
+    <div class="tab-chip" data-mode="sdp_gst" onclick="setMode('sdp_gst',this)">SDP + GST</div>
+    <div class="tab-chip" data-mode="mrp_disc" onclick="setMode('mrp_disc',this)">MRP − Disc + GST</div>
   </div>
   <div id="disc-field" style="display:none">
     <label>Discount % (3–15)</label>
     <input type="number" id="disc-pct" value="10" min="3" max="15" style="max-width:120px" oninput="recalc()">
   </div>
-  <div style="font-size:12px;color:var(--muted);margin-top:8px;background:var(--paper-dim);padding:9px 12px;border-radius:8px" id="mode-info">
-    Customer pays the NRP rate as listed.
+
+  <!-- PDF OPTIONS -->
+  <div style="margin-top:14px;padding:12px;background:var(--paper-dim);border-radius:10px">
+    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">PDF Options</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;margin:0;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer">
+        <input type="checkbox" id="opt-gst" checked style="width:16px;height:16px"> Show GST breakdown in total
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;margin:0;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer">
+        <input type="checkbox" id="opt-img" checked style="width:16px;height:16px"> Include product image column
+      </label>
+    </div>
   </div>
 </div>
 
+<!-- BATHROOMS -->
 <div class="card">
   <div class="card-head">
-    <h3>Bathrooms</h3>
+    <h3>🛁 Bathrooms</h3>
     <button class="btn btn-outline btn-sm" onclick="addBathroom()">+ Add Bathroom</button>
   </div>
   <div id="bathrooms-container"></div>
-  <div id="no-bathroom-hint" class="empty-state" style="padding:30px 10px">
+  <div id="no-bath-hint" class="empty-state" style="padding:28px 10px">
     <div class="icon">🛁</div>
-    <p>Add a bathroom to start placing products into Shower / WC / Basin areas.</p>
+    <p>Add a bathroom to start placing products.</p>
   </div>
 </div>
 
-<div class="grand-total-bar" id="total-bar" style="display:none">
-  <span class="label">Grand Total</span>
-  <span class="amount" id="grand-total">₹0</span>
+<!-- TOTALS -->
+<div id="totals-section" style="display:none">
+  <div style="background:white;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:14px">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--line);font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Price Summary</div>
+    <div id="totals-breakdown" style="padding:14px 18px"></div>
+  </div>
 </div>
 
 <div style="display:flex;gap:10px;margin-top:6px">
-  <button class="btn btn-dark full" onclick="saveAndDownload()">Save Quotation + Download PDF</button>
+  <button class="btn btn-dark full" onclick="saveAndDownload()">💾 Save + Download PDF</button>
+  <button class="btn btn-outline btn-sm" onclick="clearQuote()" style="flex:0.35">🗑️</button>
+</div>
+
+<!-- SAVED QUOTATIONS -->
+<div class="card" style="margin-top:20px">
+  <div class="card-head"><h3>📋 Saved Quotations</h3></div>
+  <div id="saved-quotes-list"><div class="empty-state" style="padding:20px"><p>No quotations yet</p></div></div>
 </div>
 
 <!-- ADD PRODUCT MODAL -->
@@ -67,18 +89,28 @@
 
     <label>Search Product</label>
     <input type="text" id="modal-search" placeholder="Code or description..." oninput="modalSearch()" autocomplete="off">
-    <div id="modal-search-results" style="margin-top:8px;max-height:220px;overflow-y:auto"></div>
+    <div id="modal-search-results" style="margin-top:6px;max-height:200px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;display:none"></div>
 
-    <div id="modal-selected" style="display:none;margin-top:14px">
-      <div style="background:var(--paper-dim);border-radius:10px;padding:12px">
-        <div id="modal-selected-info" style="font-size:13px;font-weight:700;margin-bottom:6px"></div>
-        <div class="field-row">
-          <div><label>Qty</label><input type="number" id="modal-qty" value="1" min="1" oninput="updateModalPrice()"></div>
-          <div><label>Bathroom (optional label)</label><input type="text" id="modal-bathroom-tag" placeholder="e.g. Master"></div>
-        </div>
-        <div id="modal-price-preview" style="margin-top:8px;font-size:13px;font-weight:700;color:var(--brass-deep)"></div>
+    <div id="modal-selected-block" style="display:none;margin-top:12px">
+      <div style="background:var(--paper-dim);border-radius:10px;padding:12px;margin-bottom:10px">
+        <div id="modal-sel-code" style="font-weight:700;font-size:13px;color:var(--ink)"></div>
+        <div id="modal-sel-desc" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
+        <div id="modal-sel-prices" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
       </div>
-      <button class="btn btn-dark full" style="margin-top:12px" onclick="confirmAddProduct()">Add to this area</button>
+
+      <label>Product Image URL (optional)</label>
+      <input type="text" id="modal-img-url" placeholder="https://www.jaquar.com/images/...">
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;margin-bottom:8px">
+        💡 Jaquar website pe product kholo → right click image → Copy image address
+        <button class="btn btn-outline btn-sm" style="margin-left:6px;font-size:10px" onclick="openJaquarSearch()">🌐 Open Jaquar</button>
+      </div>
+
+      <div class="field-row">
+        <div><label>Qty</label><input type="number" id="modal-qty" value="1" min="1" oninput="updateModalPrice()"></div>
+        <div><label>Bathroom label (optional)</label><input type="text" id="modal-bath-tag" placeholder="e.g. Attach"></div>
+      </div>
+      <div id="modal-price-line" style="margin-top:8px;padding:10px 12px;background:var(--ink);border-radius:8px;color:var(--brass);font-weight:700;font-size:14px;display:none"></div>
+      <button class="btn btn-dark full" style="margin-top:10px" onclick="confirmAdd()">✅ Add to Quotation</button>
     </div>
   </div>
 </div>
@@ -87,68 +119,60 @@
 
 {% block extra_js %}
 <script>
+// ── STATE ──────────────────────────────────────────────
 let curMode = 'nrp';
-let bathrooms = []; // {id, name, areas:{shower:[],wc:[],basin:[]}}
-let modalTargetBathroom = null;
-let modalTargetArea = null;
-let modalSelectedProduct = null;
+let bathrooms = [];
 let bid = 0;
+let modalTargetBath = null;
+let modalTargetArea = null;
+let modalSelProduct = null;
 
-const AREA_DEFS = [
-  { key: 'shower', label: 'Shower Area', icon: '🚿' },
-  { key: 'wc', label: 'WC Area', icon: '🚽' },
-  { key: 'basin', label: 'Basin Area', icon: '🪥' }
+const AREAS = [
+  { key:'shower', label:'Shower Area', icon:'🚿' },
+  { key:'wc',     label:'WC Area',     icon:'🚽' },
+  { key:'basin',  label:'Basin Area',  icon:'🪥' }
 ];
 
-// ---- load cart items added from search page, if any ----
+// ── INIT ───────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
+  loadSavedQuotes();
+  // Load cart from search page
   const cart = JSON.parse(sessionStorage.getItem('quote_cart') || '[]');
   if (cart.length) {
     addBathroom('Master Bathroom');
-    cart.forEach(item => {
-      bathrooms[0].areas.shower.push({
-        code: item.code, description: item.description, source: item.source,
-        sdp: item.sdp, nrp: item.nrp, mrp: item.mrp, qty: item.qty || 1, bathroomTag: ''
-      });
-    });
+    cart.forEach(item => bathrooms[0].areas.shower.push({...item, qty:1, imgUrl:'', bathTag:''}));
     sessionStorage.removeItem('quote_cart');
     renderBathrooms();
-    toast('Loaded ' + cart.length + ' product(s) from search');
+    toast('Loaded ' + cart.length + ' item(s) from search');
   }
 });
 
+// ── PRICING MODE ───────────────────────────────────────
 function setMode(mode, el) {
   curMode = mode;
   document.querySelectorAll('#mode-tabs .tab-chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('disc-field').style.display = mode === 'nrp_disc' ? 'block' : 'none';
-  const info = {
-    nrp: 'Customer pays the NRP rate as listed.',
-    nrp_disc: 'NRP minus your discount, applied per line item.',
-    sdp_gst: 'SDP plus 18% GST, applied per line item.',
-    mrp_disc: 'MRP minus 35%, plus 18% GST on the discounted amount.'
-  };
-  document.getElementById('mode-info').textContent = info[mode];
   recalc();
 }
 
-function unitPrice(p) {
-  const disc = parseFloat(document.getElementById('disc-pct').value) || 10;
-  const nrp = parseFloat(p.nrp) || 0, sdp = parseFloat(p.sdp) || 0, mrp = parseFloat(p.mrp) || 0;
+function getDisc() { return Math.min(Math.max(parseFloat(document.getElementById('disc-pct').value)||10, 3), 15); }
+
+function calcUnit(p) {
+  const nrp = parseFloat(p.nrp)||0, sdp = parseFloat(p.sdp)||0, mrp = parseFloat(p.mrp)||0;
   if (curMode === 'nrp') return nrp;
-  if (curMode === 'nrp_disc') return nrp * (1 - Math.min(Math.max(disc, 3), 15) / 100);
-  if (curMode === 'sdp_gst') return sdp * 1.18;
-  if (curMode === 'mrp_disc') return mrp * 0.65 * 1.18;
+  if (curMode === 'nrp_disc') return nrp * (1 - getDisc()/100);
+  if (curMode === 'sdp_gst') return sdp;   // GST added at total level
+  if (curMode === 'mrp_disc') return mrp * 0.65; // GST added at total level
   return 0;
 }
 
-function addBathroom(presetName) {
+function needsGST() { return curMode === 'sdp_gst' || curMode === 'mrp_disc'; }
+
+// ── BATHROOM BUILDER ───────────────────────────────────
+function addBathroom(name) {
   bid++;
-  bathrooms.push({
-    id: bid,
-    name: presetName || '',
-    areas: { shower: [], wc: [], basin: [] }
-  });
+  bathrooms.push({ id:bid, name: name||'', areas:{ shower:[], wc:[], basin:[] } });
   renderBathrooms();
 }
 
@@ -157,277 +181,454 @@ function removeBathroom(id) {
   renderBathrooms();
 }
 
-function renderBathrooms() {
-  const container = document.getElementById('bathrooms-container');
-  document.getElementById('no-bathroom-hint').style.display = bathrooms.length ? 'none' : 'block';
+function renameBath(id, val) {
+  const b = bathrooms.find(x => x.id === id);
+  if (b) b.name = val;
+}
 
-  container.innerHTML = bathrooms.map(b => `
+function renderBathrooms() {
+  const c = document.getElementById('bathrooms-container');
+  document.getElementById('no-bath-hint').style.display = bathrooms.length ? 'none' : 'block';
+  c.innerHTML = bathrooms.map(b => `
     <div class="bathroom-block">
       <div class="bathroom-head">
-        <input type="text" placeholder="Bathroom name (e.g. Master Bathroom)" value="${esc(b.name)}" oninput="renameBathroom(${b.id}, this.value)">
-        <button class="btn btn-icon btn-sm" style="background:rgba(255,255,255,0.12);color:white" onclick="removeBathroom(${b.id})">✕</button>
+        <input type="text" placeholder="Bathroom name (e.g. Master Bathroom)"
+          value="${esc(b.name)}" oninput="renameBath(${b.id}, this.value)">
+        <button class="btn btn-icon btn-sm" style="background:rgba(255,255,255,0.12);color:white;border:none"
+          onclick="removeBathroom(${b.id})">✕</button>
       </div>
       <div class="bathroom-body">
-        ${AREA_DEFS.map(a => areaBlock(b, a)).join('')}
+        ${AREAS.map(a => renderAreaBlock(b, a)).join('')}
       </div>
-    </div>
-  `).join('');
-
+    </div>`).join('');
   recalc();
 }
 
-function areaBlock(bathroom, area) {
-  const items = bathroom.areas[area.key];
+function renderAreaBlock(bath, area) {
+  const items = bath.areas[area.key];
   return `
     <div class="area-block">
-      <div class="area-label">${area.icon} ${area.label} <span style="color:var(--muted);font-weight:500">(${items.length})</span></div>
-      <div class="area-products">
-        ${items.map((it, idx) => lineItem(bathroom.id, area.key, it, idx)).join('')}
+      <div class="area-label">${area.icon} ${area.label}
+        <span style="color:var(--muted);font-weight:500">(${items.length})</span>
       </div>
-      <button class="btn btn-outline btn-sm" onclick="openAddModal(${bathroom.id}, '${area.key}')">+ Add product to ${area.label}</button>
-    </div>
-  `;
+      <div class="area-products">
+        ${items.map((it,idx) => renderLineItem(bath.id, area.key, it, idx)).join('')}
+      </div>
+      <button class="btn btn-outline btn-sm" style="margin-top:4px"
+        onclick="openAddModal(${bath.id}, '${area.key}')">+ Add to ${area.label}</button>
+    </div>`;
 }
 
-function lineItem(bathId, areaKey, item, idx) {
-  const total = unitPrice(item) * (item.qty || 1);
+function renderLineItem(bathId, areaKey, item, idx) {
+  const unit = calcUnit(item);
+  const total = unit * (item.qty||1);
   return `
     <div class="line-item">
+      ${item.imgUrl ? `<img src="${esc(item.imgUrl)}" style="width:40px;height:40px;object-fit:contain;border-radius:6px;border:1px solid var(--line);flex-shrink:0" onerror="this.style.display='none'">` : ''}
       <div class="li-info">
-        <div class="li-code">${esc(item.code)}${item.bathroomTag ? ' · ' + esc(item.bathroomTag) : ''}</div>
+        <div class="li-code">${esc(item.code)}${item.bathTag ? ' · '+esc(item.bathTag) : ''}</div>
         <div class="li-desc">${esc(item.description)} · Qty ${item.qty}</div>
       </div>
-      <div class="li-price">₹${total.toFixed(2)}</div>
-      <button class="li-remove" onclick="removeLineItem(${bathId}, '${areaKey}', ${idx})">✕</button>
-    </div>
-  `;
+      <div class="li-price">${fmtMoney(total)}</div>
+      <button class="li-remove" onclick="removeItem(${bathId},'${areaKey}',${idx})">✕</button>
+    </div>`;
 }
 
-function renameBathroom(id, name) {
-  const b = bathrooms.find(x => x.id === id);
-  if (b) b.name = name;
-}
-
-function removeLineItem(bathId, areaKey, idx) {
+function removeItem(bathId, areaKey, idx) {
   const b = bathrooms.find(x => x.id === bathId);
   if (b) { b.areas[areaKey].splice(idx, 1); renderBathrooms(); }
 }
 
+// ── TOTALS ─────────────────────────────────────────────
 function recalc() {
-  renderTotalsOnly();
-}
-
-function renderTotalsOnly() {
-  // re-render line item prices + grand total without losing input focus issues
-  document.querySelectorAll('.bathroom-block').forEach((el, i) => {
-    const b = bathrooms[i];
-    if (!b) return;
-  });
-  renderBathrooms.skipGuard = true;
-
-  let grand = 0;
-  bathrooms.forEach(b => AREA_DEFS.forEach(a => {
-    b.areas[a.key].forEach(it => { grand += unitPrice(it) * (it.qty || 1); });
+  let subtotal = 0;
+  bathrooms.forEach(b => AREAS.forEach(a => {
+    b.areas[a.key].forEach(it => { subtotal += calcUnit(it) * (it.qty||1); });
   }));
 
-  const bar = document.getElementById('total-bar');
-  const hasItems = bathrooms.some(b => AREA_DEFS.some(a => b.areas[a.key].length));
-  bar.style.display = hasItems ? 'flex' : 'none';
-  document.getElementById('grand-total').textContent = fmtMoney(grand);
+  const hasItems = bathrooms.some(b => AREAS.some(a => b.areas[a.key].length));
+  const sec = document.getElementById('totals-section');
+  sec.style.display = hasItems ? 'block' : 'none';
 
-  // update line item displayed prices in place (cheap full re-render is fine at this scale)
-  document.querySelectorAll('.bathroom-block').forEach((blockEl, i) => {
-    const b = bathrooms[i];
-    if (!b) return;
-    blockEl.querySelectorAll('.area-block').forEach((areaEl, ai) => {
-      const areaKey = AREA_DEFS[ai].key;
-      const items = b.areas[areaKey];
-      const lineEls = areaEl.querySelectorAll('.line-item .li-price');
-      lineEls.forEach((priceEl, idx) => {
-        const it = items[idx];
-        if (it) priceEl.textContent = fmtMoney(unitPrice(it) * (it.qty || 1));
-      });
-    });
-  });
+  const showGST = document.getElementById('opt-gst').checked && needsGST();
+  const gst = showGST ? subtotal * 0.18 : 0;
+  const grand = subtotal + gst;
+
+  let html = '';
+  if (showGST) {
+    html += row('Subtotal (excl. GST)', fmtMoney(subtotal));
+    html += row('GST @ 18%', fmtMoney(gst));
+    html += `<div style="display:flex;justify-content:space-between;padding:10px 0;font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--ink);border-top:2px solid var(--ink);margin-top:4px">
+      <span>Grand Total</span><span style="color:var(--brass)">${fmtMoney(grand)}</span></div>`;
+  } else {
+    html += `<div style="display:flex;justify-content:space-between;padding:8px 0;font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--ink)">
+      <span>Grand Total</span><span style="color:var(--brass)">${fmtMoney(subtotal)}</span></div>`;
+  }
+  document.getElementById('totals-breakdown').innerHTML = html;
 }
 
-// ---- ADD PRODUCT MODAL ----
+function row(label, val) {
+  return `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--line)">
+    <span style="color:var(--muted)">${label}</span><span style="font-weight:600">${val}</span></div>`;
+}
+
+// ── ADD PRODUCT MODAL ──────────────────────────────────
 function openAddModal(bathId, areaKey) {
-  modalTargetBathroom = bathId;
-  modalTargetArea = areaKey;
-  modalSelectedProduct = null;
+  modalTargetBath = bathId; modalTargetArea = areaKey; modalSelProduct = null;
   document.getElementById('modal-search').value = '';
+  document.getElementById('modal-search-results').style.display = 'none';
   document.getElementById('modal-search-results').innerHTML = '';
-  document.getElementById('modal-selected').style.display = 'none';
+  document.getElementById('modal-selected-block').style.display = 'none';
+  document.getElementById('modal-img-url').value = '';
+  document.getElementById('modal-qty').value = 1;
+  document.getElementById('modal-bath-tag').value = '';
+  document.getElementById('modal-price-line').style.display = 'none';
   document.getElementById('add-product-modal').classList.add('open');
   setTimeout(() => document.getElementById('modal-search').focus(), 100);
 }
 
-function closeAddModal() {
-  document.getElementById('add-product-modal').classList.remove('open');
-}
+function closeAddModal() { document.getElementById('add-product-modal').classList.remove('open'); }
 
-let modalSearchTimer;
+let _mst;
 function modalSearch() {
-  clearTimeout(modalSearchTimer);
+  clearTimeout(_mst);
   const q = document.getElementById('modal-search').value.trim();
-  if (q.length < 2) { document.getElementById('modal-search-results').innerHTML = ''; return; }
-  modalSearchTimer = setTimeout(async () => {
+  const box = document.getElementById('modal-search-results');
+  if (q.length < 2) { box.style.display='none'; return; }
+  _mst = setTimeout(async () => {
     const data = await apiGet('/api/search?q=' + encodeURIComponent(q));
-    const box = document.getElementById('modal-search-results');
-    if (!data.results.length) { box.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted)">No matches</div>'; return; }
-    box.innerHTML = data.results.slice(0, 8).map(p => `
-      <div class="line-item" style="cursor:pointer" onclick='selectModalProduct(${JSON.stringify(p).replace(/'/g, "&apos;")})'>
-        <div class="li-info">
-          <div class="li-code">${esc(p.code)}</div>
-          <div class="li-desc">${esc(p.description)}</div>
-        </div>
-        <div class="li-price">${fmtMoneyShort(p.nrp)}</div>
-      </div>
-    `).join('');
-  }, 200);
+    if (!data.results.length) { box.innerHTML='<div style="padding:10px;font-size:12px;color:var(--muted)">No matches</div>'; box.style.display='block'; return; }
+    box.style.display = 'block';
+    box.innerHTML = data.results.slice(0,8).map(p => `
+      <div style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--line);font-size:13px"
+        onmouseenter="this.style.background='var(--paper-dim)'" onmouseleave="this.style.background=''"
+        onclick='pickProduct(${JSON.stringify(p).replace(/'/g,"&apos;")})'>
+        <div style="font-weight:700">${esc(p.code)}</div>
+        <div style="color:var(--muted);font-size:11.5px">${esc(p.description)}</div>
+        <div style="color:var(--brass-deep);font-size:11px">NRP: ${fmtMoney(p.nrp)} | MRP: ${fmtMoney(p.mrp)}</div>
+      </div>`).join('');
+  }, 220);
 }
 
-function selectModalProduct(p) {
-  modalSelectedProduct = p;
-  document.getElementById('modal-selected').style.display = 'block';
-  document.getElementById('modal-selected-info').textContent = p.code + ' — ' + p.description;
-  document.getElementById('modal-qty').value = 1;
+function pickProduct(p) {
+  modalSelProduct = p;
+  document.getElementById('modal-search-results').style.display = 'none';
+  document.getElementById('modal-selected-block').style.display = 'block';
+  document.getElementById('modal-sel-code').textContent = p.code;
+  document.getElementById('modal-sel-desc').textContent = p.description;
+  document.getElementById('modal-sel-prices').textContent =
+    'SDP: ' + fmtMoney(p.sdp) + ' | NRP: ' + fmtMoney(p.nrp) + ' | MRP: ' + fmtMoney(p.mrp);
   updateModalPrice();
 }
 
 function updateModalPrice() {
-  if (!modalSelectedProduct) return;
-  const qty = parseInt(document.getElementById('modal-qty').value) || 1;
-  const total = unitPrice(modalSelectedProduct) * qty;
-  document.getElementById('modal-price-preview').textContent = 'Line total: ' + fmtMoney(total);
+  if (!modalSelProduct) return;
+  const qty = parseInt(document.getElementById('modal-qty').value)||1;
+  const unit = calcUnit(modalSelProduct);
+  const total = unit * qty;
+  const el = document.getElementById('modal-price-line');
+  if (!unit) { el.style.display='none'; return; }
+  el.style.display = 'block';
+  el.textContent = 'Line total: ' + fmtMoney(total) + ' (unit: ' + fmtMoney(unit) + ' × ' + qty + ')';
 }
 
-function confirmAddProduct() {
-  if (!modalSelectedProduct) { toast('Pick a product first'); return; }
-  const b = bathrooms.find(x => x.id === modalTargetBathroom);
+function openJaquarSearch() {
+  const code = modalSelProduct ? modalSelProduct.code : document.getElementById('modal-search').value.trim();
+  window.open('https://www.jaquar.com/en/search?q=' + encodeURIComponent(code), '_blank');
+}
+
+function confirmAdd() {
+  if (!modalSelProduct) { toast('Pick a product first'); return; }
+  const b = bathrooms.find(x => x.id === modalTargetBath);
   if (!b) return;
-  const qty = parseInt(document.getElementById('modal-qty').value) || 1;
-  const tag = document.getElementById('modal-bathroom-tag').value.trim();
   b.areas[modalTargetArea].push({
-    code: modalSelectedProduct.code, description: modalSelectedProduct.description,
-    source: modalSelectedProduct.source, sdp: modalSelectedProduct.sdp,
-    nrp: modalSelectedProduct.nrp, mrp: modalSelectedProduct.mrp,
-    qty, bathroomTag: tag
+    code: modalSelProduct.code, description: modalSelProduct.description,
+    source: modalSelProduct.source,
+    sdp: modalSelProduct.sdp, nrp: modalSelProduct.nrp, mrp: modalSelProduct.mrp,
+    qty: parseInt(document.getElementById('modal-qty').value)||1,
+    imgUrl: document.getElementById('modal-img-url').value.trim(),
+    bathTag: document.getElementById('modal-bath-tag').value.trim()
   });
   closeAddModal();
   renderBathrooms();
   toast('✅ Added');
 }
 
-function esc(s) {
-  if (!s) return '';
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-// ---- SAVE + PDF ----
+// ── SAVE + PDF ─────────────────────────────────────────
 async function saveAndDownload() {
-  const name = document.getElementById('cust-name').value.trim();
-  if (!name) { toast('❌ Customer name is required'); return; }
-  if (!bathrooms.some(b => AREA_DEFS.some(a => b.areas[a.key].length))) { toast('❌ Add at least one product'); return; }
+  const custName = document.getElementById('cust-name').value.trim();
+  if (!custName) { toast('❌ Customer name required'); return; }
+  if (!bathrooms.some(b => AREAS.some(a => b.areas[a.key].length))) { toast('❌ Add at least one product'); return; }
 
-  let grand = 0;
+  const showGST = document.getElementById('opt-gst').checked && needsGST();
+  const withImg = document.getElementById('opt-img').checked;
+
+  let subtotal = 0;
   const bathroomsPayload = bathrooms.map(b => {
     const areas = {};
-    AREA_DEFS.forEach(a => {
+    AREAS.forEach(a => {
       areas[a.key] = b.areas[a.key].map(it => {
-        const total = unitPrice(it) * (it.qty || 1);
-        grand += total;
-        return { ...it, unit_price: unitPrice(it), total };
+        const unit = calcUnit(it);
+        const lineTotal = unit * (it.qty||1);
+        subtotal += lineTotal;
+        return { ...it, unit_price: unit, total: lineTotal };
       });
     });
-    return { name: b.name || 'Bathroom', areas };
+    return { name: b.name||'Bathroom', areas };
   });
 
+  const gst = showGST ? subtotal * 0.18 : 0;
+  const grand = subtotal + gst;
+
   const payload = {
-    customer_name: name,
+    customer_name: custName,
     customer_phone: document.getElementById('cust-phone').value.trim(),
     price_mode: curMode,
-    discount_pct: parseFloat(document.getElementById('disc-pct').value) || 0,
+    discount_pct: getDisc(),
     bathrooms: bathroomsPayload,
     grand_total: grand
   };
 
   const res = await apiPost('/api/quotations', payload);
   if (res.ok) {
-    toast('✅ Quotation saved — generating PDF...');
-    generatePDF(payload);
+    toast('✅ Saved — generating PDF...');
+    generatePDF(payload, subtotal, gst, grand, showGST, withImg, res.id || '');
+    loadSavedQuotes();
   }
 }
 
-function generatePDF(q) {
-  // Build a printable HTML doc and trigger browser print-to-PDF for a dependable, image-capable PDF.
+function clearQuote() {
+  if (!confirm('Clear all products?')) return;
+  bathrooms = []; bid = 0;
+  renderBathrooms();
+  document.getElementById('totals-section').style.display = 'none';
+  toast('🗑️ Cleared');
+}
+
+// ── PDF GENERATION ─────────────────────────────────────
+function generatePDF(q, subtotal, gst, grand, showGST, withImg, qid) {
+  const qNum = 'MST-' + new Date().getFullYear() + '-' + String(qid).padStart(4,'0');
+  const dateStr = new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'2-digit', year:'numeric'});
+
   const win = window.open('', '_blank');
-  const areaLabels = { shower: 'SHOWER AREA', wc: 'WC AREA', basin: 'BASIN AREA' };
   let bodyHtml = '';
   let sno = 1;
 
-  q.bathrooms.forEach(b => {
-    const hasItems = Object.values(b.areas).some(arr => arr.length);
+  const imgCol = withImg ? '<th style="width:80px">Product Image</th>' : '';
+
+  q.bathrooms.forEach(bath => {
+    const hasItems = Object.values(bath.areas).some(arr => arr.length);
     if (!hasItems) return;
-    bodyHtml += `<div class="bath-title">${esc(b.name || 'Bathroom')}</div>`;
-    Object.keys(areaLabels).forEach(ak => {
-      const items = b.areas[ak];
+
+    // Bathroom subtotal
+    let bathTotal = 0;
+    AREAS.forEach(a => { bath.areas[a.key].forEach(it => { bathTotal += it.total; }); });
+
+    bodyHtml += `
+      <tr><td colspan="${withImg?6:5}" style="background:#f0f0f0;font-weight:bold;font-size:12px;padding:7px 8px;text-align:center;text-transform:uppercase;letter-spacing:0.5px">
+        ${esc(bath.name||'Bathroom')}
+      </td></tr>`;
+
+    AREAS.forEach(area => {
+      const items = bath.areas[area.key];
       if (!items.length) return;
-      bodyHtml += `<div class="area-title">${areaLabels[ak]}</div>`;
-      bodyHtml += `<table><thead><tr><th>S.No</th><th>Code</th><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>`;
       items.forEach(it => {
-        bodyHtml += `<tr>
-          <td>${sno++}</td>
-          <td>${esc(it.code)}</td>
-          <td>${esc(it.description)}${it.bathroomTag ? ' <i>(' + esc(it.bathroomTag) + ')</i>' : ''}</td>
-          <td>${it.qty}</td>
-          <td>₹${it.unit_price.toFixed(2)}</td>
-          <td>₹${it.total.toFixed(2)}</td>
-        </tr>`;
+        const imgCell = withImg
+          ? `<td style="text-align:center;padding:6px">${it.imgUrl
+              ? `<img src="${esc(it.imgUrl)}" style="width:70px;height:70px;object-fit:contain" onerror="this.parentElement.innerHTML='<div style=height:70px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:11px>No image</div>'">`
+              : '<div style="width:70px;height:70px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;margin:auto">Image</div>'
+            }</td>`
+          : '';
+        bodyHtml += `
+          <tr>
+            <td style="text-align:center">${sno++}</td>
+            <td>${esc(it.description)}</td>
+            <td style="font-family:monospace;font-size:11px">${esc(it.code)}</td>
+            ${imgCell}
+            <td style="text-align:center">${it.qty}</td>
+            <td style="text-align:right">${it.total.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+            <td style="text-align:right">${it.total.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+          </tr>`;
       });
-      bodyHtml += `</tbody></table>`;
     });
+
+    // Bathroom subtotal row
+    bodyHtml += `
+      <tr>
+        <td colspan="${withImg?5:4}" style="text-align:right;font-weight:bold;padding:6px 8px;background:#fafafa">TOTAL -</td>
+        <td style="text-align:right;font-weight:bold;padding:6px 8px;background:#fafafa" colspan="2">
+          ${bathTotal.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}
+        </td>
+      </tr>
+      <tr><td colspan="${withImg?7:6}" style="height:8px"></td></tr>`;
   });
 
-  win.document.write(`
-    <html><head><title>Quotation - ${esc(q.customer_name)}</title>
-    <style>
-      body{font-family:Arial,sans-serif;color:#15171c;padding:30px;max-width:800px;margin:0 auto}
-      .head{background:#15171c;color:white;padding:18px 22px;border-radius:8px;margin-bottom:18px}
-      .head h1{font-size:18px;margin:0 0 4px}
-      .head p{font-size:11px;opacity:0.7;margin:0}
-      .meta{display:flex;justify-content:space-between;margin-bottom:16px;font-size:13px}
-      .bath-title{background:#b8762f;color:white;padding:7px 12px;border-radius:6px;font-weight:bold;font-size:13px;margin:16px 0 8px}
-      .area-title{font-weight:bold;font-size:11.5px;color:#8f5a20;text-transform:uppercase;margin:10px 0 4px}
-      table{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:11.5px}
-      th,td{border:1px solid #e4ddd0;padding:6px 8px;text-align:left}
-      th{background:#f1ede4}
-      .total-row{background:#15171c;color:#b8762f;padding:12px 16px;border-radius:8px;display:flex;justify-content:space-between;font-weight:bold;font-size:15px;margin-top:14px}
-      .terms{font-size:10.5px;color:#555;margin-top:20px;line-height:1.6}
-      @media print{.no-print{display:none}}
-    </style></head>
-    <body>
-      <div class="head">
-        <h1>MST CERAMIC WORLD</h1>
-        <p>HO: Lalji Arcade, Opp Saibaba Temple, Santoshi Mata Road, Kalyan-W &nbsp;|&nbsp; Tel: 0251-2208090 &nbsp;|&nbsp; GST: 27AABFM8508N1ZV</p>
-      </div>
-      <div class="meta">
-        <div><b>TO:</b> ${esc(q.customer_name).toUpperCase()}<br>${q.customer_phone ? 'MOB: ' + esc(q.customer_phone) : ''}</div>
-        <div style="text-align:right"><b>DATE:</b> ${new Date().toLocaleDateString('en-IN')}<br>Mode: ${q.price_mode}</div>
-      </div>
-      ${bodyHtml}
-      <div class="total-row"><span>GRAND TOTAL</span><span>₹${q.grand_total.toFixed(2)}</span></div>
-      <div class="terms">
-        <b>TERMS &amp; CONDITIONS:</b><br>
-        • Transportation charges extra &nbsp; • Order once placed cannot be modified &nbsp;
-        • Material must be checked at site, responsibility thereafter is customer's &nbsp;
-        • Delivery at ground level, unloading in customer's scope &nbsp; • Quotation valid for 15 days
-      </div>
-      <button class="no-print" onclick="window.print()" style="margin-top:20px;padding:10px 20px;background:#15171c;color:white;border:none;border-radius:8px;cursor:pointer">Print / Save as PDF</button>
-    </body></html>
-  `);
+  // GST + Grand Total rows
+  if (showGST) {
+    bodyHtml += `
+      <tr>
+        <td colspan="${withImg?5:4}" style="text-align:right;font-weight:bold;padding:5px 8px">SUB TOTAL -</td>
+        <td colspan="2" style="text-align:right;font-weight:bold;padding:5px 8px">
+          ${subtotal.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}
+        </td>
+      </tr>
+      <tr>
+        <td colspan="${withImg?5:4}" style="text-align:right;padding:5px 8px">GST @ 18% -</td>
+        <td colspan="2" style="text-align:right;padding:5px 8px">
+          ${gst.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}
+        </td>
+      </tr>`;
+  }
+
+  bodyHtml += `
+    <tr style="background:#15171c">
+      <td colspan="${withImg?5:4}" style="text-align:right;font-weight:bold;color:white;padding:8px">GRAND TOTAL -</td>
+      <td colspan="2" style="text-align:right;font-weight:bold;color:#b8762f;padding:8px;font-size:14px">
+        ${grand.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}
+      </td>
+    </tr>`;
+
+  win.document.write(`<!DOCTYPE html><html><head><title>Quotation - ${esc(q.customer_name)}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;font-size:12px;color:#15171c;padding:20px;max-width:900px;margin:0 auto}
+    .header{display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #15171c}
+    .company-name{color:#c0392b;font-weight:bold;font-size:14px;margin-bottom:3px}
+    .company-info{font-size:10.5px;line-height:1.6;text-align:center}
+    .logo-area{text-align:right}
+    .logo-box{width:90px;height:55px;border:1px solid #ddd;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999}
+    .quotation-title{text-align:center;font-weight:bold;font-size:14px;text-decoration:underline;margin:10px 0 14px}
+    .meta{display:flex;justify-content:space-between;margin-bottom:14px;font-size:12px}
+    .meta-left{line-height:1.8}
+    .meta-left b{font-size:13px}
+    table{width:100%;border-collapse:collapse;margin-bottom:0}
+    th{background:#15171c;color:white;padding:7px 8px;font-size:11.5px;text-align:left}
+    td{border:1px solid #ddd;padding:6px 8px;vertical-align:middle;font-size:11.5px}
+    .terms-box{border:1px solid #ddd;padding:12px 14px;margin-top:14px;font-size:11px}
+    .terms-box b{font-size:11.5px}
+    .terms-box ol{padding-left:18px;margin-top:6px;line-height:2}
+    .footer{display:flex;justify-content:space-between;margin-top:14px;font-size:11.5px}
+    .footer-left{line-height:2}
+    .stamp-box{width:80px;height:80px;border:1px dashed #ccc;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#ccc;margin-top:6px}
+    .bank-details{font-size:11px;line-height:1.9}
+    .bank-details b{display:block;margin-bottom:4px;font-size:11.5px}
+    .print-btn{background:#15171c;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px;margin-top:16px}
+    @media print{.print-btn{display:none} body{padding:10px}}
+  </style></head><body>
+
+  <div class="header">
+    <div class="company-info">
+      <div class="company-name">MST CERAMIC WORLD</div>
+      HO: LALJI ARCADE, OPP SAIBABA TEMPLE, SANTOSHI MATA ROAD, KALYAN-W<br>
+      Tel: - 0251-2208090 &nbsp; Email: mstceramics@gmail.com<br>
+      <b>GST NO: 27AABFM8508N1ZV</b>
+    </div>
+    <div class="logo-area">
+      <div class="logo-box">MST<br>LOGO</div>
+    </div>
+  </div>
+
+  <div class="quotation-title">QUOTATION</div>
+
+  <div class="meta">
+    <div class="meta-left">
+      <b>TO, ${esc(q.customer_name.toUpperCase())}</b><br>
+      ${q.customer_phone ? 'MOB - ' + esc(q.customer_phone) : ''}
+      ${q.customer_site ? '<br>' + esc(q.customer_site) : ''}
+    </div>
+    <div style="text-align:right">
+      <b>DATE - ${dateStr}</b><br>
+      Quot. No: ${qNum}
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:32px">S.no</th>
+        <th>Description</th>
+        <th style="width:130px">Product Code</th>
+        ${withImg ? '<th style="width:85px">Product Image</th>' : ''}
+        <th style="width:35px">Qty</th>
+        <th style="width:75px;text-align:right">Rate</th>
+        <th style="width:85px;text-align:right">Total Amt.</th>
+      </tr>
+    </thead>
+    <tbody>${bodyHtml}</tbody>
+  </table>
+
+  <div class="terms-box">
+    <b>TERMS &amp; CONDITION:</b>
+    <ol>
+      <li>TRANSPORTATION CHARGES WILL BE EXTRA</li>
+      <li>ONCE ORDER PLACED CAN NOT MODIFIED OR CHANGE</li>
+      <li>MATERIAL MUST CHECK BY PERSON AVAILABLE AT SITE AFTER THAT, RESPONSIBILITY OF THEM</li>
+      <li>DELIVERY AT GROUND LEVEL &amp; UNLOADING IN CUSTOMERS SCOPE</li>
+      <li>ABOVE QUOTATION IS VALID TILL 15 DAYS</li>
+      <li>GST IS INCLUDED IN THE PRICE OF ALL PRODUCTS</li>
+    </ol>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">
+      <b>Thanks &amp; Regards</b><br>
+      Yours Sincerely,<br><br>
+      <b>FOR MST CERAMIC WORLD</b><br>
+      <div class="stamp-box">STAMP</div>
+      <br>GST NO. 27AABFM8508N1ZV
+    </div>
+    <div class="bank-details">
+      <b>● BANK DETAILS:</b>
+      1. BANK NAME: BANK OF BARODA<br>
+      2. A/C NO: 99140400000293<br>
+      3. IFSC: BARB0DBKYAN (FIFTH CHARACTER ZERO)<br>
+      4. BRANCH: SHIVAJI CHOWK-KALYAN WEST
+    </div>
+  </div>
+
+  <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  </body></html>`);
   win.document.close();
 }
+
+// ── SAVED QUOTES LIST ──────────────────────────────────
+async function loadSavedQuotes() {
+  const data = await apiGet('/api/quotations');
+  const el = document.getElementById('saved-quotes-list');
+  if (!data.quotations.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:20px"><p>No quotations yet</p></div>';
+    return;
+  }
+  el.innerHTML = data.quotations.map(q => `
+    <div class="list-item">
+      <div class="avatar">${initials(q.customer_name)}</div>
+      <div class="li-body">
+        <div class="li-name">${esc(q.customer_name)}</div>
+        <div class="li-sub">${esc(q.customer_phone||'—')} · ${q.created_at?.split('T')[0]||''}</div>
+      </div>
+      <div class="li-actions">
+        <span style="font-weight:700;color:var(--brass-deep)">${fmtMoney(q.grand_total)}</span>
+        <button class="btn btn-outline btn-sm" onclick="reDownload(${q.id})">↓ PDF</button>
+      </div>
+    </div>`).join('');
+}
+
+async function reDownload(id) {
+  const data = await apiGet('/api/quotations');
+  const q = data.quotations.find(x => x.id === id);
+  if (!q) return;
+  const showGST = needsGST();
+  const subtotal = q.grand_total / (showGST ? 1.18 : 1);
+  const gst = showGST ? subtotal * 0.18 : 0;
+  generatePDF(q, subtotal, gst, q.grand_total, showGST, true, id);
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.getElementById('opt-gst').addEventListener('change', recalc);
+document.getElementById('disc-pct')?.addEventListener('input', recalc);
 </script>
 {% endblock %}
