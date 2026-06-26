@@ -32,7 +32,7 @@
     <label>Discount % (3-15)</label>
     <input type="number" id="disc-pct" value="10" min="3" max="15" style="max-width:120px" oninput="recalc()">
   </div>
-  <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap">
+  <div style="margin-top:12px">
     <label style="display:flex;align-items:center;gap:6px;margin:0;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer">
       <input type="checkbox" id="opt-img" checked style="width:16px;height:16px"> Include product image column in PDF
     </label>
@@ -52,7 +52,7 @@
   </div>
 </div>
 
-<!-- TOTALS PREVIEW -->
+<!-- TOTALS -->
 <div id="totals-section" style="display:none">
   <div style="background:white;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:14px">
     <div style="padding:12px 18px;border-bottom:1px solid var(--line);font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Price Summary</div>
@@ -75,7 +75,7 @@
 <div class="modal-bg" id="add-product-modal">
   <div class="modal">
     <div class="modal-head">
-      <h3>Add Product</h3>
+      <h3 id="modal-title">Add Product</h3>
       <button class="modal-close" onclick="closeAddModal()">✕</button>
     </div>
     <label>Search Product</label>
@@ -118,10 +118,13 @@ let modalTargetBath = null;
 let modalTargetArea = null;
 let modalSelProduct = null;
 
+// 5 areas - shower, wc, basin, waterheater, wellness
 const AREAS = [
-  {key:'shower', label:'Shower Area', icon:'🚿'},
-  {key:'wc',     label:'WC Area',     icon:'🚽'},
-  {key:'basin',  label:'Basin Area',  icon:'🪥'}
+  {key:'shower',      label:'Shower Area',      icon:'🚿'},
+  {key:'wc',          label:'WC Area',           icon:'🚽'},
+  {key:'basin',       label:'Basin Area',         icon:'🪥'},
+  {key:'waterheater', label:'Water Heater',       icon:'🌡️'},
+  {key:'wellness',    label:'Wellness',           icon:'🧖'}
 ];
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -160,9 +163,12 @@ function needsDiscount() { return curMode==='nrp_disc'; }
 
 function addBathroom(name) {
   bid++;
-  bathrooms.push({id:bid, name:name||'', areas:{shower:[],wc:[],basin:[]}});
+  const areas = {};
+  AREAS.forEach(a => areas[a.key] = []);
+  bathrooms.push({id:bid, name:name||'', areas});
   renderBathrooms();
 }
+
 function removeBathroom(id) { bathrooms=bathrooms.filter(b=>b.id!==id); renderBathrooms(); }
 function renameBath(id,val) { const b=bathrooms.find(x=>x.id===id); if(b) b.name=val; }
 
@@ -188,9 +194,12 @@ function renderArea(bath,area) {
   const items=bath.areas[area.key];
   return `
     <div class="area-block">
-      <div class="area-label">${area.icon} ${area.label} <span style="color:var(--muted);font-weight:500">(${items.length})</span></div>
+      <div class="area-label">${area.icon} ${area.label}
+        <span style="color:var(--muted);font-weight:500">(${items.length})</span>
+      </div>
       <div class="area-products">${items.map((it,idx)=>renderLine(bath.id,area.key,it,idx)).join('')}</div>
-      <button class="btn btn-outline btn-sm" style="margin-top:4px" onclick="openAddModal(${bath.id},'${area.key}')">+ Add to ${area.label}</button>
+      <button class="btn btn-outline btn-sm" style="margin-top:4px"
+        onclick="openAddModal(${bath.id},'${area.key}','${area.label}')">+ Add to ${area.label}</button>
     </div>`;
 }
 
@@ -244,8 +253,10 @@ function recalc() {
 function row(l,v){return `<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid var(--line)"><span style="color:var(--muted)">${l}</span><span style="font-weight:600">${v}</span></div>`;}
 function rowBold(l,v){return `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;font-weight:700"><span>${l}</span><span style="color:var(--brass-deep)">${v}</span></div>`;}
 
-function openAddModal(bathId,areaKey) {
+// MODAL
+function openAddModal(bathId,areaKey,areaLabel) {
   modalTargetBath=bathId; modalTargetArea=areaKey; modalSelProduct=null;
+  document.getElementById('modal-title').textContent='Add to '+areaLabel;
   ['modal-search','modal-img','modal-tag'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('modal-qty').value=1;
   document.getElementById('modal-results').style.display='none';
@@ -325,6 +336,7 @@ function confirmAdd(){
   closeAddModal(); renderBathrooms(); toast('Added!');
 }
 
+// SAVE + PDF
 async function saveAndDownload(){
   const custName=document.getElementById('cust-name').value.trim();
   if(!custName){toast('Customer name required');return;}
@@ -387,12 +399,19 @@ function generatePDF(q,bathtotals,grandTotal,discAmt,afterDisc,gst,finalAmt,with
   let sno=1;
 
   bathtotals.forEach(bath=>{
-    const hasItems=Object.values(bath.areas).some(arr=>arr.length);
+    const hasItems=AREAS.some(a=>bath.areas[a.key]&&bath.areas[a.key].length);
     if(!hasItems)return;
-    bodyHtml+=`<tr><td colspan="${cols}" style="background:#f0f0f0;font-weight:bold;font-size:12px;padding:7px 10px;text-transform:uppercase;letter-spacing:0.5px">${bath.name}</td></tr>`;
+
+    // Bathroom name row
+    bodyHtml+=`<tr><td colspan="${cols}" style="background:#15171c;color:white;font-weight:bold;font-size:12px;padding:8px 10px;text-transform:uppercase;letter-spacing:1px;text-align:center">${bath.name}</td></tr>`;
+
     AREAS.forEach(area=>{
       const items=bath.areas[area.key];
-      if(!items.length)return;
+      if(!items||!items.length)return; // Skip empty areas
+
+      // Area name row - only shown if has products
+      bodyHtml+=`<tr><td colspan="${cols}" style="background:#f5f5f5;font-weight:bold;font-size:11px;padding:5px 10px;color:#555;text-transform:uppercase;letter-spacing:0.5px;border-left:3px solid #b8762f">${area.label.toUpperCase()}</td></tr>`;
+
       items.forEach(it=>{
         const imgCell=withImg
           ?`<td style="text-align:center;padding:4px">${it.imgUrl
@@ -400,6 +419,7 @@ function generatePDF(q,bathtotals,grandTotal,discAmt,afterDisc,gst,finalAmt,with
               :'<div style="width:72px;height:72px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:10px;color:#bbb;margin:auto">Image</div>'
             }</td>`
           :'';
+
         bodyHtml+=`<tr>
           <td style="text-align:center">${sno++}</td>
           <td>${it.description}${it.tag?' ('+it.tag+')':''}</td>
@@ -411,17 +431,21 @@ function generatePDF(q,bathtotals,grandTotal,discAmt,afterDisc,gst,finalAmt,with
         </tr>`;
       });
     });
+
+    // Bathroom subtotal
     bodyHtml+=`<tr>
-      <td colspan="${cols-2}" style="text-align:right;font-weight:bold;padding:6px 8px;background:#fafafa;border-top:1px solid #ddd">TOTAL -</td>
-      <td colspan="2" style="text-align:right;font-weight:bold;padding:6px 8px;background:#fafafa;border-top:1px solid #ddd">${fmt(bath.subtotal)}</td>
-    </tr><tr><td colspan="${cols}" style="height:6px;background:white;border:none"></td></tr>`;
+      <td colspan="${cols-2}" style="text-align:right;font-weight:bold;padding:7px 10px;background:#f0f0f0;border-top:2px solid #333">TOTAL -</td>
+      <td colspan="2" style="text-align:right;font-weight:bold;padding:7px 10px;background:#f0f0f0;border-top:2px solid #333">${fmt(bath.subtotal)}</td>
+    </tr>
+    <tr><td colspan="${cols}" style="height:8px;background:white;border:none"></td></tr>`;
   });
 
+  // Grand total rows
   bodyHtml+=`<tr><td colspan="${cols-2}" style="text-align:right;font-weight:bold;padding:7px 8px;border-top:2px solid #333">GRAND TOTAL -</td><td colspan="2" style="text-align:right;font-weight:bold;padding:7px 8px;border-top:2px solid #333">${fmt(grandTotal)}</td></tr>`;
   if(discAmt>0) bodyHtml+=`<tr><td colspan="${cols-2}" style="text-align:right;padding:6px 8px">DISCOUNT -</td><td colspan="2" style="text-align:right;padding:6px 8px">${fmt(discAmt)}</td></tr>`;
   if(gst>0) bodyHtml+=`<tr><td colspan="${cols-2}" style="text-align:right;padding:6px 8px">GST @ 18% -</td><td colspan="2" style="text-align:right;padding:6px 8px">${fmt(gst)}</td></tr>`;
   const finalLabel=discAmt>0||gst>0?'FINAL -':'GRAND TOTAL -';
-  bodyHtml+=`<tr style="background:#15171c"><td colspan="${cols-2}" style="text-align:right;font-weight:bold;color:white;padding:8px">${finalLabel}</td><td colspan="2" style="text-align:right;font-weight:bold;color:#b8762f;padding:8px;font-size:14px">${fmt(finalAmt)}</td></tr>`;
+  bodyHtml+=`<tr style="background:#15171c"><td colspan="${cols-2}" style="text-align:right;font-weight:bold;color:white;padding:9px 10px">${finalLabel}</td><td colspan="2" style="text-align:right;font-weight:bold;color:#b8762f;padding:9px 10px;font-size:14px">${fmt(finalAmt)}</td></tr>`;
 
   const logoSrc=typeof MST_LOGO!=='undefined'?MST_LOGO:'';
   const stampSrc=typeof MST_STAMP!=='undefined'?MST_STAMP:'';
@@ -430,24 +454,25 @@ function generatePDF(q,bathtotals,grandTotal,discAmt,afterDisc,gst,finalAmt,with
   win.document.write(`<!DOCTYPE html><html><head><title>Quotation - ${q.customer_name}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:Arial,sans-serif;font-size:12px;color:#15171c;padding:20px;max-width:950px;margin:0 auto}
-    .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:2px solid #15171c}
-    .co-name{color:#c0392b;font-weight:bold;font-size:14px;margin-bottom:3px}
-    .co-info{font-size:10.5px;line-height:1.7;text-align:center}
-    .quot-title{text-align:center;font-weight:bold;font-size:14px;text-decoration:underline;margin:10px 0 12px}
-    .meta{display:flex;justify-content:space-between;margin-bottom:12px}
+    body{font-family:Arial,sans-serif;font-size:12px;color:#15171c;padding:20px;max-width:960px;margin:0 auto}
+    .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:2px solid #15171c}
+    .co-name{color:#c0392b;font-weight:bold;font-size:15px;margin-bottom:4px}
+    .co-info{font-size:10.5px;line-height:1.8;text-align:center}
+    .quot-title{text-align:center;font-weight:bold;font-size:14px;text-decoration:underline;margin:10px 0 14px}
+    .meta{display:flex;justify-content:space-between;margin-bottom:14px}
     table{width:100%;border-collapse:collapse}
     th{background:#15171c;color:white;padding:7px 8px;font-size:11.5px;text-align:left}
     td{border:1px solid #ddd;padding:5px 8px;vertical-align:middle;font-size:11.5px}
-    .terms{border:1px solid #ddd;padding:12px 14px;margin-top:12px;font-size:11px}
-    .terms ol{padding-left:18px;margin-top:5px;line-height:2.1}
-    .footer{display:flex;justify-content:space-between;margin-top:14px;align-items:flex-start}
-    .footer-left{font-size:11.5px;line-height:2}
+    .terms{border:1px solid #ddd;padding:12px 14px;margin-top:14px;font-size:11px}
+    .terms ol{padding-left:18px;margin-top:6px;line-height:2.2}
+    .footer{display:flex;justify-content:space-between;margin-top:16px;align-items:flex-start}
+    .footer-left{font-size:11.5px;line-height:2.2}
     .bank{font-size:11px;line-height:2}
     .bank b{display:block;margin-bottom:4px;font-size:12px}
-    .print-btn{background:#15171c;color:white;border:none;padding:10px 22px;border-radius:8px;cursor:pointer;font-size:13px;margin-top:16px}
+    .print-btn{background:#15171c;color:white;border:none;padding:10px 22px;border-radius:8px;cursor:pointer;font-size:13px;margin-top:18px}
     @media print{.print-btn{display:none}body{padding:10px}}
   </style></head><body>
+
   <div class="hdr">
     <div class="co-info">
       <div class="co-name">MST CERAMIC WORLD</div>
@@ -455,18 +480,30 @@ function generatePDF(q,bathtotals,grandTotal,discAmt,afterDisc,gst,finalAmt,with
       Tel: - 0251-2208090 &nbsp; Email: mstceramics@gmail.com<br>
       <b>GST NO : 27AABFM8508N1ZV</b>
     </div>
-    ${logoSrc?`<img src="${logoSrc}" style="width:100px;height:65px;object-fit:contain" alt="MST Logo">`:'<div style="width:100px;height:65px;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999">LOGO</div>'}
+    ${logoSrc
+      ?`<img src="${logoSrc}" style="width:130px;height:85px;object-fit:contain" alt="MST Logo">`
+      :'<div style="width:130px;height:85px;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999">LOGO</div>'
+    }
   </div>
+
   <div class="quot-title">QUOTATION</div>
+
   <div class="meta">
-    <div><b>TO, ${q.customer_name.toUpperCase()}</b><br>${q.customer_phone?'MOB - '+q.customer_phone:''}</div>
-    <div style="text-align:right"><b>DATE - ${dateStr}</b><br>Quot. No: ${qNum}</div>
+    <div>
+      <b>TO, ${q.customer_name.toUpperCase()}</b><br>
+      ${q.customer_phone?'MOB - '+q.customer_phone:''}
+    </div>
+    <div style="text-align:right">
+      <b>DATE - ${dateStr}</b><br>
+      Quot. No: ${qNum}
+    </div>
   </div>
+
   <table>
     <thead><tr>
       <th style="width:32px">S.no</th>
       <th>Discription</th>
-      <th style="width:130px">Product Code</th>
+      <th style="width:135px">Product Code</th>
       ${withImg?'<th style="width:85px">Product Image</th>':''}
       <th style="width:35px">Qty</th>
       <th style="width:75px;text-align:right">Rate</th>
@@ -474,6 +511,7 @@ function generatePDF(q,bathtotals,grandTotal,discAmt,afterDisc,gst,finalAmt,with
     </tr></thead>
     <tbody>${bodyHtml}</tbody>
   </table>
+
   <div class="terms">
     <b>TERMS &amp; CONDITION :</b>
     <ol>
@@ -485,11 +523,16 @@ function generatePDF(q,bathtotals,grandTotal,discAmt,afterDisc,gst,finalAmt,with
       <li>GST IS INCLUDED IN THE PRICE OF ALL PRODUCTS</li>
     </ol>
   </div>
+
   <div class="footer">
     <div class="footer-left">
-      <b>Thanks &amp; Regards</b><br>Yours Sincerely,<br><br>
+      <b>Thanks &amp; Regards</b><br>
+      Yours Sincerely,<br><br>
       <b>FOR MST CERAMIC WORLD</b><br>
-      ${stampSrc?`<img src="${stampSrc}" style="width:90px;height:90px;object-fit:contain;margin-top:6px" alt="Stamp">`:'<div style="width:80px;height:80px;border:1px dashed #ccc;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#ccc;margin-top:6px">STAMP</div>'}
+      ${stampSrc
+        ?`<img src="${stampSrc}" style="width:100px;height:100px;object-fit:contain;margin-top:6px" alt="Stamp">`
+        :'<div style="width:80px;height:80px;border:1px dashed #ccc;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#ccc;margin-top:8px">STAMP</div>'
+      }
       <br><b>GST NO. 27AABFM8508N1ZV</b>
     </div>
     <div class="bank">
@@ -500,6 +543,7 @@ function generatePDF(q,bathtotals,grandTotal,discAmt,afterDisc,gst,finalAmt,with
       4. BRANCH : SHIVAJI CHOWK-KALYAN WEST
     </div>
   </div>
+
   <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
   </body></html>`);
   win.document.close();
