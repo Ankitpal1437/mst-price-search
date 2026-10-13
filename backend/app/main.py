@@ -67,7 +67,7 @@ class CustomerIn(BaseModel): name:str=Field(min_length=1); phone:str=''; email:s
 class StockIn(BaseModel): product_code:str=Field(min_length=1); product_name:str=Field(min_length=1); brand:str=''; category:str='Uncategorised'; location:str=''; quantity:float=Field(ge=0,default=0); reorder_level:float=Field(ge=0,default=0)
 class MoveIn(BaseModel): movement_type:str; quantity:float=Field(gt=0); reference:str=''
 class OrderIn(BaseModel): order_number:str; customer_name:str; phone:str=''; status:str='Pending'; total_amount:float=Field(ge=0,default=0); expected_delivery:date|None=None; notes:str=''
-class QuoteIn(BaseModel): quote_number:str; customer_name:str; phone:str=''; site_name:str=''; price_mode:str='NRP'; discount_pct:float=Field(ge=0,le=100,default=0); items:list[dict]=[]; total_amount:float=Field(ge=0,default=0)
+class QuoteIn(BaseModel): quote_number:str; customer_name:str; phone:str=''; site_name:str=''; price_mode:str='NRP'; discount_pct:float=Field(ge=0,le=100,default=0); items:list[dict]=Field(default_factory=list); total_amount:float=Field(ge=0,default=0)
 class FollowIn(BaseModel): customer_name:str; phone:str=''; due_date:date; followup_type:str='General'; notes:str=''
 class VisitorIn(BaseModel): name:str; phone:str=''; purpose:str='Browsing'; visitor_type:str='Walk-In'
 @app.get('/api/health')
@@ -148,7 +148,23 @@ def quotations(d:Session=Depends(db_dep),u:User=Depends(current_user)):return {'
 @app.post('/api/quotations')
 def add_quote(x:QuoteIn,d:Session=Depends(db_dep),u:User=Depends(current_user)):
  if d.query(Quote).filter_by(quote_number=x.quote_number).first():raise HTTPException(409,'Quotation number already exists')
- r=Quote(quote_number=x.quote_number,customer_name=x.customer_name,phone=x.phone,site_name=x.site_name,price_mode=x.price_mode,discount_pct=x.discount_pct,items_json=json.dumps(x.items),total_amount=x.total_amount);d.add(r);d.commit();d.refresh(r);return {'ok':True,'id':r.id}
+ price_fields={'EWP':'ewp','MDP':'mdp','SDP':'sdp','NPP':'npp','NRP':'nrp','MRP':'mrp'}
+ mode=x.price_mode.strip().upper()
+ if mode not in price_fields: raise HTTPException(400,'Price mode must be EWP, MDP, SDP, NPP, NRP, or MRP')
+ if not x.items: raise HTTPException(400,'Add at least one product to the quotation')
+ calculated=[]; total=0.0
+ for item in x.items:
+  code=str(item.get('product_code') or item.get('code') or '').strip().upper()
+  try: quantity=float(item.get('quantity',0))
+  except (TypeError,ValueError): raise HTTPException(400,'Each quotation quantity must be a number')
+  if not code or quantity<=0: raise HTTPException(400,'Each quotation item needs a product code and positive quantity')
+  product=d.query(Product).filter_by(code=code,active=1).first()
+  if not product: raise HTTPException(404,f'Product code not found: {code}')
+  unit_price=float(getattr(product,price_fields[mode]) or 0)
+  if unit_price<=0: raise HTTPException(400,f'No {mode} price available for product {code}')
+  line_subtotal=unit_price*quantity; line_discount=line_subtotal*(x.discount_pct/100); line_total=round(line_subtotal-line_discount,2); total+=line_total
+  calculated.append({'product_code':product.code,'description':product.description,'quantity':quantity,'price_mode':mode,'unit_price':unit_price,'discount_pct':x.discount_pct,'line_total':line_total})
+ r=Quote(quote_number=x.quote_number,customer_name=x.customer_name,phone=x.phone,site_name=x.site_name,price_mode=mode,discount_pct=x.discount_pct,items_json=json.dumps(calculated),total_amount=round(total,2));d.add(r);d.commit();d.refresh(r);return {'ok':True,'id':r.id,'total_amount':r.total_amount,'items':calculated,'tax_note':'Tax has not been calculated in this draft. Verify showroom tax rules before issuing to a customer.'}
 @app.get('/api/followups')
 def followups(d:Session=Depends(db_dep),u:User=Depends(current_user)):return {'items':[{'id':x.id,'customer_name':x.customer_name,'phone':x.phone,'due_date':x.due_date.isoformat(),'followup_type':x.followup_type,'notes':x.notes,'status':x.status} for x in d.query(Followup).order_by(Followup.due_date).limit(500).all()]}
 @app.post('/api/followups')
