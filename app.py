@@ -417,6 +417,17 @@ def dashboard_page():
     return render_template("dashboard.html")
 
 
+
+@app.route("/inventory")
+def inventory_page():
+    return render_template("inventory.html")
+
+
+@app.route("/orders")
+def orders_page():
+    return render_template("orders.html")
+
+
 @app.route("/api/dashboard")
 def api_dashboard():
     db = get_crm_db()
