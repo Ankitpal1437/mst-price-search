@@ -17,7 +17,7 @@ SessionLocal=sessionmaker(bind=engine,autoflush=False,autocommit=False); Base=de
 class User(Base):
  __tablename__='users'; id=Column(Integer,primary_key=True); username=Column(String(80),unique=True,index=True); password_hash=Column(String(255)); role=Column(String(30),default='sales'); active=Column(Integer,default=1)
 class Product(Base):
- __tablename__='products'; id=Column(Integer,primary_key=True); code=Column(String(120),unique=True,index=True); description=Column(Text,default=''); brand=Column(String(80),default='Jaquar',index=True); category=Column(String(120),default='Uncategorised',index=True); sdp=Column(Float,default=0); nrp=Column(Float,default=0); mrp=Column(Float,default=0); gst_rate=Column(Float,default=0); active=Column(Integer,default=1)
+ __tablename__='products'; id=Column(Integer,primary_key=True); code=Column(String(120),unique=True,index=True); description=Column(Text,default=''); brand=Column(String(80),default='Unspecified',index=True); category=Column(String(120),default='Uncategorised',index=True); source=Column(String(80),default=''); ewp=Column(Float,default=0); mdp=Column(Float,default=0); sdp=Column(Float,default=0); npp=Column(Float,default=0); nrp=Column(Float,default=0); mrp=Column(Float,default=0); old_nrp=Column(Float,default=0); old_mrp=Column(Float,default=0); gst_rate=Column(Float,default=0); active=Column(Integer,default=1)
 class Customer(Base):
  __tablename__='customers'; id=Column(Integer,primary_key=True); name=Column(String(180),index=True); phone=Column(String(40),default=''); email=Column(String(180),default=''); site_name=Column(String(180),default=''); customer_type=Column(String(60),default='Retail'); address=Column(Text,default=''); notes=Column(Text,default=''); status=Column(String(40),default='New Inquiry'); created_at=Column(DateTime,default=datetime.utcnow)
 class Inventory(Base):
@@ -33,6 +33,14 @@ class Followup(Base):
 class Visitor(Base):
  __tablename__='visitors'; id=Column(Integer,primary_key=True); name=Column(String(180)); phone=Column(String(40),default=''); purpose=Column(String(100),default='Browsing'); visitor_type=Column(String(80),default='Walk-In'); check_in=Column(DateTime,default=datetime.utcnow); check_out=Column(DateTime)
 Base.metadata.create_all(engine)
+def migrate_product_columns():
+ from sqlalchemy import inspect, text
+ existing={col['name'] for col in inspect(engine).get_columns('products')}
+ additions={'source':"VARCHAR(80) DEFAULT ''",'ewp':'FLOAT DEFAULT 0','mdp':'FLOAT DEFAULT 0','npp':'FLOAT DEFAULT 0','old_nrp':'FLOAT DEFAULT 0','old_mrp':'FLOAT DEFAULT 0'}
+ with engine.begin() as conn:
+  for name, definition in additions.items():
+   if name not in existing: conn.execute(text(f'ALTER TABLE products ADD COLUMN {name} {definition}'))
+migrate_product_columns()
 def db_dep():
  d=SessionLocal()
  try: yield d
@@ -76,7 +84,7 @@ def dashboard(d:Session=Depends(db_dep),u:User=Depends(current_user)):
 def products(q:str='',limit:int=50,d:Session=Depends(db_dep),u:User=Depends(current_user)):
  x=d.query(Product).filter(Product.active==1)
  if q.strip(): t='%'+q.strip()+'%'; x=x.filter(or_(Product.code.ilike(t),Product.description.ilike(t),Product.brand.ilike(t),Product.category.ilike(t)))
- return {'items':[{'id':p.id,'code':p.code,'description':p.description,'brand':p.brand,'category':p.category,'sdp':p.sdp,'nrp':p.nrp,'mrp':p.mrp,'gst_rate':p.gst_rate} for p in x.order_by(Product.code).limit(min(max(limit,1),200)).all()]}
+ return {'items':[{'id':p.id,'code':p.code,'description':p.description,'brand':p.brand,'category':p.category,'source':p.source,'ewp':p.ewp,'mdp':p.mdp,'sdp':p.sdp,'npp':p.npp,'nrp':p.nrp,'mrp':p.mrp,'old_nrp':p.old_nrp,'old_mrp':p.old_mrp,'gst_rate':p.gst_rate} for p in x.order_by(Product.code).limit(min(max(limit,1),200)).all()]}
 @app.post('/api/products/import')
 def import_products(file:UploadFile=File(...),d:Session=Depends(db_dep),u:User=Depends(roles('owner','manager'))):
  raw=file.file.read()
@@ -96,7 +104,7 @@ def import_products(file:UploadFile=File(...),d:Session=Depends(db_dep),u:User=D
    except ValueError:return 0
   p=d.query(Product).filter_by(code=code).first()
   if not p:p=Product(code=code);d.add(p)
-  p.description=desc;p.brand=pick(row,'brand',default='Jaquar') or 'Jaquar';p.category=pick(row,'category','sub-category','sub category',default='Uncategorised');p.sdp=num('sdp');p.nrp=num('nrp','npp');p.mrp=num('mrp');p.gst_rate=num('gst','gst rate','gst_rate');count+=1
+  p.description=desc;p.brand=pick(row,'brand',default='Unspecified') or 'Unspecified';p.source=pick(row,'source','product source','division');p.category=pick(row,'category','sub-category','sub category',default='Uncategorised') or 'Uncategorised';p.ewp=num('ewp');p.mdp=num('mdp');p.sdp=num('sdp');p.npp=num('npp');p.nrp=num('nrp');p.mrp=num('mrp');p.old_nrp=num('old_nrp','old nrp');p.old_mrp=num('old_mrp','old mrp');p.gst_rate=num('gst','gst rate','gst_rate');count+=1
  d.commit();return {'ok':True,'processed':count}
 @app.get('/api/customers')
 def customers(d:Session=Depends(db_dep),u:User=Depends(current_user)): return {'items':[{'id':x.id,'name':x.name,'phone':x.phone,'email':x.email,'site_name':x.site_name,'customer_type':x.customer_type,'status':x.status} for x in d.query(Customer).order_by(Customer.id.desc()).limit(500).all()]}
