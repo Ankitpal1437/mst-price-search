@@ -1,18 +1,25 @@
 name: Verify showroom app
 on:
   push:
-    branches: [rebuild/clean-start]
+    branches: [rebuild/mst-showroom-system]
   pull_request:
     branches: [main]
 jobs:
-  backend-syntax:
+  backend-smoke:
     runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ci-only-secret-key-change-this-0123456789abcdef
+      ADMIN_PASSWORD: ci-only-owner-password-123
+      DATABASE_URL: sqlite:///./ci_showroom.db
+      CORS_ORIGINS: http://localhost:5173
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - run: pip install -r backend/requirements.txt
       - run: python -m compileall backend/app
+      - run: cd backend && python -c "from app.main import app; print('API startup smoke test passed:', app.title)"
   frontend-build:
     runs-on: ubuntu-latest
     defaults:
