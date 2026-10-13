@@ -108,7 +108,7 @@ def import_products(file:UploadFile=File(...),d:Session=Depends(db_dep),u:User=D
   p=existing_products.get(code)
   if not p:
    p=Product(code=code);d.add(p);existing_products[code]=p
-  p.description=desc;p.brand=pick(row,'brand',default='Unspecified') or 'Unspecified';p.source=pick(row,'source','product source','division');p.category=pick(row,'category','sub-category','sub category',default='Uncategorised') or 'Uncategorised';p.ewp=num('ewp');p.mdp=num('mdp');p.sdp=num('sdp');p.npp=num('npp');p.nrp=num('nrp');p.mrp=num('mrp');p.old_nrp=num('old_nrp','old nrp');p.old_mrp=num('old_mrp','old mrp');p.gst_rate=num('gst','gst rate','gst_rate');count+=1
+  p.description=desc;p.brand=pick(row,'brand',default='Unspecified') or 'Unspecified';p.source=pick(row,'source','product source','division');p.category=pick(row,'category','sub-category','sub category','source',default='Uncategorised') or 'Uncategorised';p.ewp=num('ewp');p.mdp=num('mdp');p.sdp=num('sdp');p.npp=num('npp');p.nrp=num('nrp');p.mrp=num('mrp');p.old_nrp=num('old_nrp','old nrp');p.old_mrp=num('old_mrp','old mrp');p.gst_rate=num('gst','gst rate','gst_rate');count+=1
  d.commit();return {'ok':True,'processed':count}
 @app.get('/api/customers')
 def customers(d:Session=Depends(db_dep),u:User=Depends(current_user)): return {'items':[{'id':x.id,'name':x.name,'phone':x.phone,'email':x.email,'site_name':x.site_name,'customer_type':x.customer_type,'status':x.status} for x in d.query(Customer).order_by(Customer.id.desc()).limit(500).all()]}
