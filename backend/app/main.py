@@ -11,7 +11,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, Column, Integer, String, Text, Float, DateTime, Date, func, or_
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
-NAME=os.getenv('APP_NAME','MST Ceramic World'); SECRET=os.getenv('SECRET_KEY','dev-only-change-me'); DB_URL=os.getenv('DATABASE_URL','sqlite:///./mst_showroom.db')
+NAME=os.getenv('APP_NAME','MST Ceramic World'); SECRET=os.getenv('SECRET_KEY',''); DB_URL=os.getenv('DATABASE_URL','sqlite:///./mst_showroom.db')
+if len(SECRET)<32 or SECRET=='replace-with-a-long-random-secret': raise RuntimeError('Set SECRET_KEY to a unique random value of at least 32 characters in backend/.env')
+if os.getenv('ADMIN_PASSWORD','') in ('','change-this-password') or len(os.getenv('ADMIN_PASSWORD',''))<12: raise RuntimeError('Set ADMIN_PASSWORD to a unique password of at least 12 characters in backend/.env')
 engine=create_engine(DB_URL,connect_args={'check_same_thread':False} if DB_URL.startswith('sqlite') else {},pool_pre_ping=True)
 SessionLocal=sessionmaker(bind=engine,autoflush=False,autocommit=False); Base=declarative_base(); pwd=CryptContext(schemes=['bcrypt'],deprecated='auto'); oauth=OAuth2PasswordBearer(tokenUrl='/api/auth/login')
 class User(Base):
@@ -58,7 +60,7 @@ def roles(*allowed):
  return check
 def bootstrap():
  d=SessionLocal(); name=os.getenv('ADMIN_USERNAME','admin')
- if not d.query(User).filter_by(username=name).first(): d.add(User(username=name,password_hash=pwd.hash(os.getenv('ADMIN_PASSWORD','change-this-password')),role='owner')); d.commit()
+ if not d.query(User).filter_by(username=name).first(): d.add(User(username=name,password_hash=pwd.hash(os.environ['ADMIN_PASSWORD']),role='owner')); d.commit()
  d.close()
 bootstrap(); app=FastAPI(title=NAME,version='0.1.0'); origins=[x.strip() for x in os.getenv('CORS_ORIGINS','http://localhost:5173').split(',') if x.strip()]; app.add_middleware(CORSMiddleware,allow_origins=origins,allow_credentials=True,allow_methods=['*'],allow_headers=['*'])
 class CustomerIn(BaseModel): name:str=Field(min_length=1); phone:str=''; email:str=''; site_name:str=''; customer_type:str='Retail'; address:str=''; notes:str=''
