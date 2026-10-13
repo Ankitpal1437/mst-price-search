@@ -354,10 +354,232 @@ def api_followup_status(fid):
     return jsonify({"ok": True})
 
 
+
+
+# ---------------------------------------------------------------
+# SHOWROOM OPERATIONS: DASHBOARD + INVENTORY + ORDERS
+# ---------------------------------------------------------------
+def init_operations_db():
+    """Create operational tables without modifying the product catalogue DB."""
+    conn = sqlite3.connect(CRM_DB)
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS inventory_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_code TEXT NOT NULL UNIQUE,
+            product_name TEXT NOT NULL,
+            brand TEXT DEFAULT '',
+            category TEXT DEFAULT '',
+            location TEXT DEFAULT '',
+            quantity_on_hand REAL NOT NULL DEFAULT 0,
+            reorder_level REAL NOT NULL DEFAULT 0,
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS stock_movements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_code TEXT NOT NULL,
+            movement_type TEXT NOT NULL,
+            quantity REAL NOT NULL,
+            reference TEXT DEFAULT '',
+            notes TEXT DEFAULT '',
+            created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS sales_orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_number TEXT NOT NULL UNIQUE,
+            customer_name TEXT NOT NULL,
+            phone TEXT DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'Pending',
+            total_amount REAL NOT NULL DEFAULT 0,
+            expected_delivery TEXT DEFAULT '',
+            notes TEXT DEFAULT '',
+            created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS purchase_orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            po_number TEXT NOT NULL UNIQUE,
+            supplier_name TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'Draft',
+            total_amount REAL NOT NULL DEFAULT 0,
+            expected_date TEXT DEFAULT '',
+            notes TEXT DEFAULT '',
+            created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory_items(category);
+        CREATE INDEX IF NOT EXISTS idx_sales_orders_status ON sales_orders(status);
+        CREATE INDEX IF NOT EXISTS idx_stock_movements_code ON stock_movements(product_code);
+    """)
+    conn.commit()
+    conn.close()
+
+
+@app.route("/dashboard")
+def dashboard_page():
+    return render_template("dashboard.html")
+
+
+@app.route("/api/dashboard")
+def api_dashboard():
+    db = get_crm_db()
+    today_str = date.today().strftime("%Y-%m-%d")
+    summary = {}
+    summary["customers"] = db.execute("SELECT COUNT(*) FROM customers").fetchone()[0]
+    summary["quotations"] = db.execute("SELECT COUNT(*) FROM quotations").fetchone()[0]
+    summary["open_quotations"] = db.execute(
+        "SELECT COUNT(*) FROM quotations WHERE status NOT IN ('Accepted','Rejected','Converted')"
+    ).fetchone()[0]
+    summary["followups_due"] = db.execute(
+        "SELECT COUNT(*) FROM followups WHERE status='Pending' AND followup_date <= ?", (today_str,)
+    ).fetchone()[0]
+    summary["visitors_today"] = db.execute(
+        "SELECT COUNT(*) FROM visitors WHERE date = ?", (today_str,)
+    ).fetchone()[0]
+    summary["inventory_items"] = db.execute("SELECT COUNT(*) FROM inventory_items").fetchone()[0]
+    summary["low_stock"] = db.execute(
+        "SELECT COUNT(*) FROM inventory_items WHERE quantity_on_hand <= reorder_level"
+    ).fetchone()[0]
+    summary["open_orders"] = db.execute(
+        "SELECT COUNT(*) FROM sales_orders WHERE status NOT IN ('Delivered','Cancelled')"
+    ).fetchone()[0]
+    summary["pending_purchase_orders"] = db.execute(
+        "SELECT COUNT(*) FROM purchase_orders WHERE status NOT IN ('Received','Cancelled')"
+    ).fetchone()[0]
+    summary["recent_quotations"] = [
+        row_to_dict(r) for r in db.execute(
+            "SELECT id, customer_name, customer_phone, grand_total, status, created_at "
+            "FROM quotations ORDER BY id DESC LIMIT 5"
+        ).fetchall()
+    ]
+    summary["due_followups"] = [
+        row_to_dict(r) for r in db.execute(
+            "SELECT id, customer_name, phone, followup_date, type, notes "
+            "FROM followups WHERE status='Pending' AND followup_date <= ? "
+            "ORDER BY followup_date ASC LIMIT 5", (today_str,)
+        ).fetchall()
+    ]
+    return jsonify(summary)
+
+
+@app.route("/api/inventory", methods=["GET", "POST"])
+def api_inventory():
+    db = get_crm_db()
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        code = str(data.get("product_code", "")).strip()
+        name = str(data.get("product_name", "")).strip()
+        if not code or not name:
+            return jsonify({"ok": False, "error": "Product code and product name are required."}), 400
+        try:
+            quantity = float(data.get("quantity_on_hand", 0))
+            reorder = float(data.get("reorder_level", 0))
+            if quantity < 0 or reorder < 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "Quantity and reorder level must be non-negative numbers."}), 400
+        try:
+            db.execute("""
+                INSERT INTO inventory_items
+                (product_code, product_name, brand, category, location, quantity_on_hand, reorder_level, updated_at)
+                VALUES (?,?,?,?,?,?,?,?)
+            """, (code, name, str(data.get("brand", "")).strip(), str(data.get("category", "")).strip(),
+                  str(data.get("location", "")).strip(), quantity, reorder, datetime.now().isoformat()))
+            if quantity:
+                db.execute("""
+                    INSERT INTO stock_movements (product_code, movement_type, quantity, reference, notes, created_at)
+                    VALUES (?, 'Opening Balance', ?, 'Opening stock', '', ?)
+                """, (code, quantity, datetime.now().isoformat()))
+            db.commit()
+        except sqlite3.IntegrityError:
+            return jsonify({"ok": False, "error": "This product code already exists in inventory."}), 409
+        return jsonify({"ok": True}), 201
+
+    rows = db.execute("SELECT * FROM inventory_items ORDER BY product_name COLLATE NOCASE").fetchall()
+    return jsonify({"items": [row_to_dict(r) for r in rows], "count": len(rows)})
+
+
+@app.route("/api/inventory/<int:item_id>/movement", methods=["POST"])
+def api_inventory_movement(item_id):
+    db = get_crm_db()
+    data = request.get_json(silent=True) or {}
+    movement_type = str(data.get("movement_type", "")).strip().lower()
+    if movement_type not in ("in", "out", "adjustment"):
+        return jsonify({"ok": False, "error": "Movement type must be in, out, or adjustment."}), 400
+    try:
+        quantity = float(data.get("quantity", 0))
+        if quantity <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "Quantity must be greater than zero."}), 400
+    item = db.execute("SELECT * FROM inventory_items WHERE id=?", (item_id,)).fetchone()
+    if not item:
+        return jsonify({"ok": False, "error": "Inventory item not found."}), 404
+    current = float(item["quantity_on_hand"])
+    updated = current + quantity if movement_type == "in" else current - quantity if movement_type == "out" else quantity
+    if updated < 0:
+        return jsonify({"ok": False, "error": "Stock cannot become negative."}), 400
+    now = datetime.now().isoformat()
+    db.execute("UPDATE inventory_items SET quantity_on_hand=?, updated_at=? WHERE id=?", (updated, now, item_id))
+    db.execute("""
+        INSERT INTO stock_movements (product_code, movement_type, quantity, reference, notes, created_at)
+        VALUES (?,?,?,?,?,?)
+    """, (item["product_code"], movement_type.title(), quantity, str(data.get("reference", "")).strip(),
+          str(data.get("notes", "")).strip(), now))
+    db.commit()
+    return jsonify({"ok": True, "quantity_on_hand": updated})
+
+
+@app.route("/api/orders", methods=["GET", "POST"])
+def api_orders():
+    db = get_crm_db()
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        order_number = str(data.get("order_number", "")).strip()
+        customer_name = str(data.get("customer_name", "")).strip()
+        if not order_number or not customer_name:
+            return jsonify({"ok": False, "error": "Order number and customer name are required."}), 400
+        try:
+            total = float(data.get("total_amount", 0))
+            if total < 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "Order total must be a non-negative number."}), 400
+        try:
+            db.execute("""
+                INSERT INTO sales_orders
+                (order_number, customer_name, phone, status, total_amount, expected_delivery, notes, created_at)
+                VALUES (?,?,?,?,?,?,?,?)
+            """, (order_number, customer_name, str(data.get("phone", "")).strip(),
+                  str(data.get("status", "Pending")).strip(), total,
+                  str(data.get("expected_delivery", "")).strip(), str(data.get("notes", "")).strip(),
+                  datetime.now().isoformat()))
+            db.commit()
+        except sqlite3.IntegrityError:
+            return jsonify({"ok": False, "error": "This order number already exists."}), 409
+        return jsonify({"ok": True}), 201
+
+    rows = db.execute("SELECT * FROM sales_orders ORDER BY id DESC").fetchall()
+    return jsonify({"orders": [row_to_dict(r) for r in rows], "count": len(rows)})
+
+
+@app.route("/api/orders/<int:order_id>/status", methods=["POST"])
+def api_order_status(order_id):
+    db = get_crm_db()
+    data = request.get_json(silent=True) or {}
+    status = str(data.get("status", "")).strip()
+    allowed = {"Pending", "Confirmed", "In Progress", "Ready for Delivery", "Delivered", "Cancelled"}
+    if status not in allowed:
+        return jsonify({"ok": False, "error": "Invalid order status."}), 400
+    cur = db.execute("UPDATE sales_orders SET status=? WHERE id=?", (status, order_id))
+    db.commit()
+    if not cur.rowcount:
+        return jsonify({"ok": False, "error": "Order not found."}), 404
+    return jsonify({"ok": True})
+
+
 # ---------------------------------------------------------------
 # STARTUP
 # ---------------------------------------------------------------
 init_crm_db()
+init_operations_db()
 
 if not os.path.exists(PRODUCTS_DB):
     print("WARNING: mst.db not found. Run build_db.py first!")
