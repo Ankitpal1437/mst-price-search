@@ -93,6 +93,7 @@ def import_products(file:UploadFile=File(...),d:Session=Depends(db_dep),u:User=D
  try: txt=raw.decode('utf-8-sig')
  except UnicodeDecodeError: txt=raw.decode('latin-1')
  reader=csv.DictReader(io.StringIO(txt)); headers={h.strip().lower():h for h in (reader.fieldnames or []) if h}
+ existing_products={p.code:p for p in d.query(Product).all()}
  def pick(row,*keys,default=''):
   for k in keys:
    if headers.get(k) and row.get(headers[k]) not in (None,''): return row[headers[k]].strip()
@@ -104,8 +105,9 @@ def import_products(file:UploadFile=File(...),d:Session=Depends(db_dep),u:User=D
   def num(*keys):
    try:return float(pick(row,*keys,default='0').replace(',','').replace('₹','') or 0)
    except ValueError:return 0
-  p=d.query(Product).filter_by(code=code).first()
-  if not p:p=Product(code=code);d.add(p)
+  p=existing_products.get(code)
+  if not p:
+   p=Product(code=code);d.add(p);existing_products[code]=p
   p.description=desc;p.brand=pick(row,'brand',default='Unspecified') or 'Unspecified';p.source=pick(row,'source','product source','division');p.category=pick(row,'category','sub-category','sub category',default='Uncategorised') or 'Uncategorised';p.ewp=num('ewp');p.mdp=num('mdp');p.sdp=num('sdp');p.npp=num('npp');p.nrp=num('nrp');p.mrp=num('mrp');p.old_nrp=num('old_nrp','old nrp');p.old_mrp=num('old_mrp','old mrp');p.gst_rate=num('gst','gst rate','gst_rate');count+=1
  d.commit();return {'ok':True,'processed':count}
 @app.get('/api/customers')
