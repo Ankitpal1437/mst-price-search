@@ -65,7 +65,7 @@ def bootstrap():
 bootstrap(); app=FastAPI(title=NAME,version='0.1.0'); origins=[x.strip() for x in os.getenv('CORS_ORIGINS','http://localhost:5173').split(',') if x.strip()]; app.add_middleware(CORSMiddleware,allow_origins=origins,allow_credentials=True,allow_methods=['*'],allow_headers=['*'])
 class CustomerIn(BaseModel): name:str=Field(min_length=1); phone:str=''; email:str=''; site_name:str=''; customer_type:str='Retail'; address:str=''; notes:str=''
 class StockIn(BaseModel): product_code:str=Field(min_length=1); product_name:str=Field(min_length=1); brand:str=''; category:str='Uncategorised'; location:str=''; quantity:float=Field(ge=0,default=0); reorder_level:float=Field(ge=0,default=0)
-class MoveIn(BaseModel): movement_type:str; quantity:float=Field(gt=0); reference:str=''
+class MoveIn(BaseModel): movement_type:str; quantity:float=Field(ge=0); reference:str=''
 class OrderIn(BaseModel): order_number:str; customer_name:str; phone:str=''; status:str='Pending'; total_amount:float=Field(ge=0,default=0); expected_delivery:date|None=None; notes:str=''
 class QuoteIn(BaseModel): quote_number:str; customer_name:str; phone:str=''; site_name:str=''; price_mode:str='NRP'; discount_pct:float=Field(ge=0,le=100,default=0); items:list[dict]=Field(default_factory=list); total_amount:float=Field(ge=0,default=0)
 class FollowIn(BaseModel): customer_name:str; phone:str=''; due_date:date; followup_type:str='General'; notes:str=''
@@ -128,6 +128,7 @@ def move_stock(item_id:int,x:MoveIn,d:Session=Depends(db_dep),u:User=Depends(rol
  r=d.query(Inventory).filter_by(id=item_id).first()
  if not r:raise HTTPException(404,'Inventory item not found')
  if x.movement_type not in ('in','out','adjustment'):raise HTTPException(400,'Movement must be in, out, or adjustment')
+ if x.movement_type in ('in','out') and x.quantity<=0: raise HTTPException(400,'Stock in/out quantity must be greater than zero')
  qty=r.quantity+x.quantity if x.movement_type=='in' else r.quantity-x.quantity if x.movement_type=='out' else x.quantity
  if qty<0:raise HTTPException(400,'Stock cannot become negative')
  r.quantity=qty;d.add(Movement(product_code=r.product_code,movement_type=x.movement_type,quantity=x.quantity,reference=x.reference));d.commit();return {'ok':True,'quantity':qty}
