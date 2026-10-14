@@ -1,26 +1,24 @@
-name: Verify showroom app
+name: Verify Showroom OS
 on:
   push:
     branches: [rebuild/mst-showroom-system]
   pull_request:
     branches: [main]
 jobs:
-  backend-smoke:
+  backend:
     runs-on: ubuntu-latest
-    env:
-      SECRET_KEY: ci-only-secret-key-change-this-0123456789abcdef
-      ADMIN_PASSWORD: ci-only-owner-password-123
-      DATABASE_URL: sqlite:///./ci_showroom.db
-      CORS_ORIGINS: http://localhost:5173
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - run: pip install -r backend/requirements.txt
-      - run: python -m compileall backend/app
-      - run: cd backend && python -m unittest discover -s tests -v
-  frontend-build:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: python -m compileall -q app tests
+      - run: python -m unittest discover -s tests -v
+  frontend:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -29,6 +27,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
       - run: npm install
       - run: npm run build
