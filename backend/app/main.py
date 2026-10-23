@@ -98,28 +98,59 @@ async def product_import(file:UploadFile=File(...),d:Session=Depends(dbdep),u:Us
  raw=await file.read()
  if len(raw)>40*1024*1024:raise HTTPException(413,"CSV exceeds 40 MB.")
  try:
-  rd=csv.DictReader(io.StringIO(raw.decode("utf-8-sig")));h={k.strip().upper():k for k in (rd.fieldnames or []) if k};ck=h.get("CODE") or h.get("ITEM CODE") or h.get("PRODUCT CODE")
+  rd=csv.DictReader(io.StringIO(raw.decode("utf-8-sig")))
+  h={k.strip().upper():k for k in (rd.fieldnames or []) if k and k.strip()}
+  ck=h.get("CODE") or h.get("ITEM CODE") or h.get("PRODUCT CODE")
   if not ck:raise HTTPException(400,"CSV must include CODE.")
-  n=0
+  # Load existing products once; this avoids one database query per row on large price lists.
+  products_by_code={p.code:p for p in d.query(Product).all()}
+  def rawval(row,*names):
+   k=next((h[x] for x in names if x in h),None)
+   if not k:return None
+   value=(row.get(k) or "").strip()
+   return value if value else None
+  def num(row,*names):
+   value=rawval(row,*names)
+   if value is None:return None
+   try:return max(0,float(value.replace(",","").replace("₹","")))
+   except (ValueError,AttributeError):return None
+  # New price-list versions take priority; older column names remain supported.
+  price_fields={
+   "ewp":("EWP",),"mdp":("MDP",),"sdp":("SDP",),"npp":("NPP",),
+   "nrp":("NRP_AUG2026","NRP_AUG_2026","NRP_JULY2026","NRP_JULY_2026","NRP_JAN2026","NRP_JAN_2026","NRP_2025","NRP","NPP"),
+   "mrp":("MRP_AUG2026","MRP_AUG_2026","MRP_JULY2026","MRP_JULY_2026","MRP_JAN2026","MRP_JAN_2026","MRP_2025","MRP"),
+   "old_nrp":("NRP_JULY2026","NRP_JULY_2026","NRP_JAN2026","NRP_JAN_2026","NRP_2025","OLD_NRP"),
+   "old_mrp":("MRP_JULY2026","MRP_JULY_2026","MRP_JAN2026","MRP_JAN_2026","MRP_2025","OLD_MRP")
+  }
+  processed=0
   for row in rd:
    code=(row.get(ck) or "").strip()
    if not code:continue
-   def val(*ks):
-    k=next((h[x] for x in ks if x in h),None);return (row.get(k) or "").strip() if k else ""
-   def num(*ks):
-    try:return max(0,float(val(*ks).replace(",","").replace("₹",""))) if val(*ks) else 0
-    except ValueError:return 0
-   p=d.query(Product).filter_by(code=code).first()
-   if not p:p=Product(code=code);d.add(p)
-   p.description=val("DESCRIPTION","PRODUCT DESCRIPTION","NAME") or p.description;p.source=val("SOURCE") or p.source;p.category=val("CATEGORY") or p.category or p.source or "Uncategorised";p.brand=val("BRAND") or p.brand or "Unspecified"
-   for a,ks in {"ewp":("EWP",),"mdp":("MDP",),"sdp":("SDP",),"npp":("NPP",),"nrp":("NRP","NPP"),"mrp":("MRP",),"old_nrp":("OLD_NRP",),"old_mrp":("OLD_MRP",)}.items():
-    v=num(*ks)
-    if v or not getattr(p,a):setattr(p,a,v)
-   n+=1
-   if n%500==0:d.flush()
-  d.commit();return {"processed":n}
- except HTTPException:d.rollback();raise
- except Exception as e:d.rollback();raise HTTPException(400,"CSV import error: "+str(e)[:120])
+   p=products_by_code.get(code)
+   if p is None:
+    p=Product(code=code)
+    products_by_code[code]=p
+    d.add(p)
+   description=rawval(row,"DESCRIPTION","PRODUCT DESCRIPTION","NAME")
+   source=rawval(row,"SOURCE")
+   category=rawval(row,"CATEGORY")
+   brand=rawval(row,"BRAND")
+   if description is not None:p.description=description
+   if source is not None:p.source=source
+   if category is not None:p.category=category
+   elif p.category in (None,"","Uncategorised") and source is not None:p.category=source
+   if brand is not None:p.brand=brand
+   for attr,aliases in price_fields.items():
+    value=num(row,*aliases)
+    if value is not None:setattr(p,attr,value)
+   processed+=1
+   if processed%2000==0:d.flush()
+  d.commit()
+  return {"processed":processed,"unique_products_in_catalogue":len(products_by_code),"price_version":"AUG2026 when available; July/January/2025 fallback","message":"Import completed. Blank price cells were left unchanged; latest available price columns were preferred."}
+ except HTTPException:
+  d.rollback();raise
+ except Exception as e:
+  d.rollback();raise HTTPException(400,"CSV import error: "+str(e)[:120])
 @app.get("/api/customers")
 def customers(q:str="",d:Session=Depends(dbdep),u:User=Depends(userdep)):
  z=d.query(Customer)
